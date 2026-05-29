@@ -288,7 +288,11 @@ def export_tflite(model, output_path):
     """.tflite ga eksport"""
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
-    converter.target_spec.supported_types = [tf.float16]
+    converter.target_spec.supported_ops = [
+        tf.lite.OpsSet.TFLITE_BUILTINS,
+        tf.lite.OpsSet.SELECT_TF_OPS,
+    ]
+    converter._experimental_lower_tensor_list_ops = False
 
     tflite_model = converter.convert()
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
