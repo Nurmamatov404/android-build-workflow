@@ -48,7 +48,7 @@ class GameStateDetector {
         val inBattle = detectBattle(pixels, w, h)
         val ended = detectMatchEnd(pixels, w, h)
 
-        lastLevel = if (level > lastLevel) level else lastLevel
+        if (level > 0) lastLevel = level
 
         return GameState(
             heroLevel = lastLevel,
@@ -77,14 +77,24 @@ class GameStateDetector {
     }
 
     private fun estimateLevel(pixels: IntArray, w: Int, h: Int): Int {
-        val y = (h * 0.04f).toInt().coerceIn(0, h - 1)
-        var levelTextCount = 0
-        for (x in (w / 3) until (w * 2 / 3)) {
-            val p = pixels[y * w + x]
+        // MLBB da hero level yuqori-chap burchakda ko'rinadi
+        val scanY = (h * 0.03f).toInt().coerceIn(0, h - 1)
+        val leftEdge = (w * 0.02f).toInt()
+        val rightEdge = (w * 0.12f).toInt()
+
+        var brightCount = 0
+        for (x in leftEdge until rightEdge) {
+            if (scanY >= h || x >= w) continue
+            val p = pixels[scanY * w + x]
             val b = (Color.red(p) + Color.green(p) + Color.blue(p)) / 3f
-            if (b > 150) levelTextCount++
+            if (b > 180) brightCount++
         }
-        if (levelTextCount > 20) darkFrameCount = 0
+
+        if (brightCount > 5 && brightCount < 30) {
+            val detected = (brightCount / 2).coerceIn(1, 15)
+            Log.d(TAG, "Level detected: $detected (brightCount=$brightCount)")
+            return detected
+        }
         return lastLevel
     }
 

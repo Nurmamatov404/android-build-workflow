@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import com.mlbb.trainer.database.AppDatabase
 import com.mlbb.trainer.database.Hero
 import com.mlbb.trainer.inference.InferenceService
+import com.mlbb.trainer.TouchEventService
 import kotlinx.coroutines.*
 
 class GameOverlayService : Service() {
@@ -174,6 +175,11 @@ class GameOverlayService : Service() {
         if (isAiRunning) return
         if (currentHeroId < 0 || currentModelPath.isEmpty()) {
             Toast.makeText(this, "Qahramon/model tanlanmagan!", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (TouchEventService.instance == null) {
+            Toast.makeText(this, "Maxsus imkoniyatlar xizmati yoqilmagan! Sozlamalar > Maxsus imkoniyatlar > MLBB AI Trener", Toast.LENGTH_LONG).show()
             return
         }
 

@@ -197,6 +197,8 @@ class InferenceService : Service() {
                     isShopOpen = gs.isShopOpen, isDead = gs.isDead,
                     matchEnded = gs.matchEnded, inBattle = gs.inBattle
                 )
+                currentLevel = gs.heroLevel
+                Log.d(TAG, "State: Lv${gs.heroLevel} dead=${gs.isDead} shop=${gs.isShopOpen} battle=${gs.inBattle} ended=${gs.matchEnded}")
             }
         }
     }
