@@ -164,7 +164,8 @@ def create_dataset(frames, labels, seq_len=SEQ_LEN):
 
         processed = []
         for frame in seq:
-            resized = cv2.resize(frame, (IMG_SIZE, IMG_SIZE))
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            resized = cv2.resize(rgb, (IMG_SIZE, IMG_SIZE))
             normalized = resized.astype(np.float32) / 127.5 - 1.0
             processed.append(normalized)
 
