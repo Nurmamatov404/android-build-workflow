@@ -350,6 +350,14 @@ def main():
     print("=" * 60)
     print("[3/5] Pseudo-label yaratish")
     print("=" * 60)
+
+    # Har N-kadrda birni olish — xotira va vaqtni tejash uchun
+    MAX_FRAMES = 1500
+    if len(all_frames) > MAX_FRAMES:
+        step = len(all_frames) // MAX_FRAMES
+        all_frames = all_frames[::step][:MAX_FRAMES]
+        print(f"  Subsampling: {len(all_frames)} ta kadr ishlatiladi (step={step})")
+
     loaded = []
     for fp in tqdm(all_frames, desc="Kadrlar"):
         img = cv2.imread(fp)
