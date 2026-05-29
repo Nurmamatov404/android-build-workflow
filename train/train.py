@@ -43,12 +43,12 @@ def download_videos(urls: list[str], out_dir: str) -> list[str]:
         url = url.strip()
         if not url:
             continue
-    print(f"[INFO] Yuklab olinmoqda: {url}")
-    subprocess.run([
-        "yt-dlp", "-f", "mp4", "-o", f"{out_dir}/%(id)s.%(ext)s",
-        "--extractor-args", "youtube:player_client=android",
-        "--geo-bypass", "--quiet", "--no-warnings", url
-    ], check=True)
+        print(f"[INFO] Yuklab olinmoqda: {url}")
+        subprocess.run([
+            "yt-dlp", "-f", "mp4", "-o", f"{out_dir}/%(id)s.%(ext)s",
+            "--extractor-args", "youtube:player_client=android",
+            "--geo-bypass", "--quiet", "--no-warnings", url
+        ], check=True)
         result = subprocess.run(
             ["yt-dlp", "--get-id", "--quiet", url],
             capture_output=True, text=True
