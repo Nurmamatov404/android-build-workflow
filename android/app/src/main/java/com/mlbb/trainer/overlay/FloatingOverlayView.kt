@@ -97,13 +97,32 @@ class FloatingOverlayView(
             }
         }
 
-        container.addView(TextView(context).apply {
+        val closeButton = TextView(context).apply {
+            text = "\u2716"
+            setTextColor(0xFFFF4444.toInt())
+            textSize = 18f
+            gravity = Gravity.CENTER
+            layoutParams = ViewGroup.LayoutParams(40, 40)
+            setOnClickListener { collapse() }
+        }
+        // Title va closeButton uchun ustma-ust qator
+        val headerRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            setPadding(0, 0, 0, 16)
+        }
+        headerRow.addView(TextView(context).apply {
             text = "\u22EF MLBB AI Boshqaruvi \u22EF"
             textSize = 14f
             gravity = Gravity.CENTER
             setTextColor(0xFFAAAAAA.toInt())
-            setPadding(0, 0, 0, 16)
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         })
+        headerRow.addView(closeButton)
+        container.addView(headerRow)
 
         heroInfoText = TextView(context).apply {
             text = "Quyida qahramonni tanlang"
