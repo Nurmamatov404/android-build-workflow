@@ -1,13 +1,13 @@
 package com.mlbb.trainer.inference
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.GestureDescription
 import android.content.Context
 import android.graphics.Path
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.view.accessibility.AccessibilityNodeInfo
 import com.mlbb.trainer.TouchEventService
 
 class TouchExecutor(private val context: Context) {
@@ -49,9 +49,9 @@ class TouchExecutor(private val context: Context) {
                 val path = Path().apply {
                     moveTo(x.toFloat(), y.toFloat())
                 }
-                val gestureBuilder = AccessibilityService.GestureDescription.Builder()
+                val gestureBuilder = GestureDescription.Builder()
                     .addStroke(
-                        AccessibilityService.GestureDescription.StrokeDescription(
+                        GestureDescription.StrokeDescription(
                             path, 0, 1
                         )
                     )
@@ -68,9 +68,9 @@ class TouchExecutor(private val context: Context) {
                     val path = Path().apply {
                         moveTo(x.toFloat(), y.toFloat())
                     }
-                    val gestureBuilder = AccessibilityService.GestureDescription.Builder()
+                    val gestureBuilder = GestureDescription.Builder()
                         .addStroke(
-                            AccessibilityService.GestureDescription.StrokeDescription(
+                            GestureDescription.StrokeDescription(
                                 path, 0, 1
                             )
                         )
@@ -81,9 +81,9 @@ class TouchExecutor(private val context: Context) {
                         moveTo(lastX, lastY)
                         lineTo(x.toFloat(), y.toFloat())
                     }
-                    val gestureBuilder = AccessibilityService.GestureDescription.Builder()
+                    val gestureBuilder = GestureDescription.Builder()
                         .addStroke(
-                            AccessibilityService.GestureDescription.StrokeDescription(
+                            GestureDescription.StrokeDescription(
                                 path, 0, 50  // 50ms duration
                             )
                         )
@@ -100,9 +100,9 @@ class TouchExecutor(private val context: Context) {
                     val path = Path().apply {
                         moveTo(lastX, lastY)
                     }
-                    val gestureBuilder = AccessibilityService.GestureDescription.Builder()
+                    val gestureBuilder = GestureDescription.Builder()
                         .addStroke(
-                            AccessibilityService.GestureDescription.StrokeDescription(
+                            GestureDescription.StrokeDescription(
                                 path, 0, 1
                             )
                         )

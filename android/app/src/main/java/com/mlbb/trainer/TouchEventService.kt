@@ -40,15 +40,16 @@ class TouchEventService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        if (event.motionEvent == null) return
         if (recorder == null) return
 
-        val motionEvent = event.motionEvent
+        val me = event.motionEvent
+        if (me == null) return
+
         val displayW = displayWidth
         val displayH = displayHeight
 
         if (displayW > 0 && displayH > 0) {
-            recorder?.recordEvent(motionEvent, displayW, displayH)
+            recorder?.recordEvent(me, displayW, displayH)
         }
     }
 

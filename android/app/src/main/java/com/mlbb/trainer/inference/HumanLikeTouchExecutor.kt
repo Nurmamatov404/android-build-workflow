@@ -1,6 +1,7 @@
 package com.mlbb.trainer.inference
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.GestureDescription
 import android.content.Context
 import android.graphics.Path
 import android.os.Build
@@ -86,8 +87,8 @@ class HumanLikeTouchExecutor(private val context: Context) {
             val service = TouchEventService.instance ?: return@postDelayed
             val path = Path().apply { moveTo(absX.toFloat(), absY.toFloat()) }
             val duration = if (Random.nextFloat() < 0.15f) Random.nextLong(80, 250) else Random.nextLong(30, 120)
-            val stroke = AccessibilityService.GestureDescription.StrokeDescription(path, 0, duration)
-            val gesture = AccessibilityService.GestureDescription.Builder().addStroke(stroke).build()
+            val stroke = GestureDescription.StrokeDescription(path, 0, duration)
+            val gesture = GestureDescription.Builder().addStroke(stroke).build()
             service.dispatchGesture(gesture, null, null)
             lastActionTime = System.currentTimeMillis()
             Log.d(TAG, "Tap $actionType at ($absX, $absY) [${delay}ms]")
@@ -97,8 +98,8 @@ class HumanLikeTouchExecutor(private val context: Context) {
     private fun quickTap(service: AccessibilityService, x: Int, y: Int) {
         val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
         val duration = Random.nextLong(20, 60)
-        val stroke = AccessibilityService.GestureDescription.StrokeDescription(path, 0, duration)
-        val gesture = AccessibilityService.GestureDescription.Builder().addStroke(stroke).build()
+        val stroke = GestureDescription.StrokeDescription(path, 0, duration)
+        val gesture = GestureDescription.Builder().addStroke(stroke).build()
         service.dispatchGesture(gesture, null, null)
     }
 
@@ -128,8 +129,8 @@ class HumanLikeTouchExecutor(private val context: Context) {
                 lineTo(ax2.toFloat(), ay2.toFloat())
             }
             val duration = Random.nextLong(80, 250)
-            val stroke = AccessibilityService.GestureDescription.StrokeDescription(path, 0, duration)
-            val gesture = AccessibilityService.GestureDescription.Builder().addStroke(stroke).build()
+            val stroke = GestureDescription.StrokeDescription(path, 0, duration)
+            val gesture = GestureDescription.Builder().addStroke(stroke).build()
             service.dispatchGesture(gesture, null, null)
             lastActionTime = System.currentTimeMillis()
             Log.d(TAG, "Swipe $actionType ($ax1,$ay1)->($ax2,$ay2) [${delay}ms]")
@@ -173,8 +174,8 @@ class HumanLikeTouchExecutor(private val context: Context) {
             handler.postDelayed({
                 val service = TouchEventService.instance ?: return@postDelayed
                 val path = Path().apply { moveTo(ax.toFloat(), ay.toFloat()) }
-                val stroke = AccessibilityService.GestureDescription.StrokeDescription(path, 0, 1)
-                val gesture = AccessibilityService.GestureDescription.Builder().addStroke(stroke).build()
+                val stroke = GestureDescription.StrokeDescription(path, 0, 1)
+                val gesture = GestureDescription.Builder().addStroke(stroke).build()
                 service.dispatchGesture(gesture, null, null)
                 isTouching = true
                 lastX = joystickCenterX + dx
@@ -202,8 +203,8 @@ class HumanLikeTouchExecutor(private val context: Context) {
                     lineTo(toX, toY)
                 }
                 val duration = Random.nextLong(40, 150)
-                val stroke = AccessibilityService.GestureDescription.StrokeDescription(path, 0, duration)
-                val gesture = AccessibilityService.GestureDescription.Builder().addStroke(stroke).build()
+                val stroke = GestureDescription.StrokeDescription(path, 0, duration)
+                val gesture = GestureDescription.Builder().addStroke(stroke).build()
                 service.dispatchGesture(gesture, null, null)
                 lastX = toX; lastY = toY
             }, delay)
@@ -216,8 +217,8 @@ class HumanLikeTouchExecutor(private val context: Context) {
         handler.postDelayed({
             val service = TouchEventService.instance ?: return@postDelayed
             val path = Path().apply { moveTo(lastX, lastY) }
-            val stroke = AccessibilityService.GestureDescription.StrokeDescription(path, 0, 1)
-            val gesture = AccessibilityService.GestureDescription.Builder().addStroke(stroke).build()
+            val stroke = GestureDescription.StrokeDescription(path, 0, 1)
+            val gesture = GestureDescription.Builder().addStroke(stroke).build()
             service.dispatchGesture(gesture, null, null)
             isTouching = false; lastX = -1f; lastY = -1f
         }, delay)
@@ -243,32 +244,32 @@ class HumanLikeTouchExecutor(private val context: Context) {
             "DOWN" -> {
                 val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
                 val duration = Random.nextLong(1, 60)
-                val stroke = AccessibilityService.GestureDescription.StrokeDescription(path, 0, duration)
+                val stroke = GestureDescription.StrokeDescription(path, 0, duration)
                 service.dispatchGesture(
-                    AccessibilityService.GestureDescription.Builder().addStroke(stroke).build(), null, null)
+                    GestureDescription.Builder().addStroke(stroke).build(), null, null)
                 lastX = x.toFloat(); lastY = y.toFloat(); isTouching = true
             }
             "MOVE" -> {
                 if (!isTouching) {
                     val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
-                    val stroke = AccessibilityService.GestureDescription.StrokeDescription(path, 0, 1)
+                    val stroke = GestureDescription.StrokeDescription(path, 0, 1)
                     service.dispatchGesture(
-                        AccessibilityService.GestureDescription.Builder().addStroke(stroke).build(), null, null)
+                        GestureDescription.Builder().addStroke(stroke).build(), null, null)
                 } else {
                     val path = Path().apply { moveTo(lastX, lastY); lineTo(x.toFloat(), y.toFloat()) }
                     val duration = Random.nextLong(30, 130)
-                    val stroke = AccessibilityService.GestureDescription.StrokeDescription(path, 0, duration)
+                    val stroke = GestureDescription.StrokeDescription(path, 0, duration)
                     service.dispatchGesture(
-                        AccessibilityService.GestureDescription.Builder().addStroke(stroke).build(), null, null)
+                        GestureDescription.Builder().addStroke(stroke).build(), null, null)
                 }
                 lastX = x.toFloat(); lastY = y.toFloat(); isTouching = true
             }
             "UP" -> {
                 if (isTouching) {
                     val path = Path().apply { moveTo(lastX, lastY) }
-                    val stroke = AccessibilityService.GestureDescription.StrokeDescription(path, 0, 1)
+                    val stroke = GestureDescription.StrokeDescription(path, 0, 1)
                     service.dispatchGesture(
-                        AccessibilityService.GestureDescription.Builder().addStroke(stroke).build(), null, null)
+                        GestureDescription.Builder().addStroke(stroke).build(), null, null)
                 }
                 isTouching = false; lastX = -1f; lastY = -1f
             }
