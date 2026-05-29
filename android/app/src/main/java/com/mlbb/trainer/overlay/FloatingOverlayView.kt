@@ -64,7 +64,10 @@ class FloatingOverlayView(
 
         rootView = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            layoutParams = ViewGroup.LayoutParams(bubbleSize, bubbleSize)
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
             setBackgroundColor(0xCC1A1A2E.toInt())
             elevation = 10f
             setOnTouchListener { _, event -> onTouch(event) }
