@@ -29,6 +29,9 @@ class FloatingOverlayView(
     private var selectedHeroId: Long = -1
     private var selectedHeroName: String = ""
 
+    private var isRecording = false
+
+    private var bubbleView: TextView? = null
     private val bubbleSize = 100
     private val expandedWidth = 360
     private val expandedHeight = 520
@@ -76,11 +79,14 @@ class FloatingOverlayView(
         }
     }
 
-    private fun createBubbleView(): View = TextView(context).apply {
-        text = "\uD83E\uDD16"
-        textSize = 28f
-        gravity = Gravity.CENTER
-        layoutParams = ViewGroup.LayoutParams(bubbleSize, bubbleSize)
+    private fun createBubbleView(): View {
+        bubbleView = TextView(context).apply {
+            text = "\uD83E\uDD16"
+            textSize = 28f
+            gravity = Gravity.CENTER
+            layoutParams = ViewGroup.LayoutParams(bubbleSize, bubbleSize)
+        }
+        return bubbleView!!
     }
 
     private fun createExpandedView(): View {
@@ -318,6 +324,16 @@ class FloatingOverlayView(
 
     fun preselectHero(heroId: Long) {
         preselectedHeroId = heroId
+    }
+
+    fun setRecordingStatus(recording: Boolean) {
+        isRecording = recording
+        bubbleView?.text = if (recording) "\uD83D\uDD34" else "\uD83E\uDD16"
+        if (recording) {
+            statusText.text = "\uD83D\uDD34 Ekran yozib olinmoqda"
+        } else {
+            statusText.text = "Holat: Bo'sh"
+        }
     }
 
     private fun createHeroRow(hero: Hero): View {

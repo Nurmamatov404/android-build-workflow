@@ -190,6 +190,7 @@ class GameOverlayService : Service() {
         }
 
         isAiRunning = true
+        overlayView?.setRecordingStatus(true)
         Toast.makeText(this, "$currentHeroName uchun AI ishga tushirildi", Toast.LENGTH_SHORT).show()
     }
 
@@ -200,6 +201,7 @@ class GameOverlayService : Service() {
         }
         startService(intent)
         isAiRunning = false
+        overlayView?.setRecordingStatus(false)
         Toast.makeText(this, "AI to'xtatildi", Toast.LENGTH_SHORT).show()
     }
 
