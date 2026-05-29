@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="AI Settings"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Random Offset"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="How far from exact position AI taps"
+            android:textSize="11sp"
+            android:textColor="#666" />
+        <RadioGroup
+            android:id="@+id/offsetGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <RadioButton android:id="@+id/offset10" android:text="10px" android:layout_weight="1" android:layout_width="0dp" />
+            <RadioButton android:id="@+id/offset15" android:text="15px" android:layout_weight="1" android:layout_width="0dp" />
+            <RadioButton android:id="@+id/offset25" android:text="25px" android:layout_weight="1" android:layout_width="0dp" />
+            <RadioButton android:id="@+id/offset50" android:text="50px" android:layout_weight="1" android:layout_width="0dp" />
+        </RadioGroup>
+
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#ccc" android:layout_marginVertical="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Skill Miss Rate"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Chance AI misses skill direction (human-like)"
+            android:textSize="11sp"
+            android:textColor="#666" />
+        <SeekBar
+            android:id="@+id/missRateSeek"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="100"
+            android:progress="25" />
+        <TextView
+            android:id="@+id/missRateValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="25%" />
+
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#ccc" android:layout_marginVertical="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="APM Mode"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Action speed: Lazy=slow, Normal=mixed, Intense=fast, Auto=adapts"
+            android:textSize="11sp"
+            android:textColor="#666" />
+        <RadioGroup
+            android:id="@+id/apmGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <RadioButton android:id="@+id/apmAuto" android:text="Auto" android:layout_weight="1" android:layout_width="0dp" />
+            <RadioButton android:id="@+id/apmLazy" android:text="Lazy" android:layout_weight="1" android:layout_width="0dp" />
+            <RadioButton android:id="@+id/apmNormal" android:text="Normal" android:layout_weight="1" android:layout_width="0dp" />
+            <RadioButton android:id="@+id/apmIntense" android:text="Intense" android:layout_weight="1" android:layout_width="0dp" />
+        </RadioGroup>
+
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#ccc" android:layout_marginVertical="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Skill Direction"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Random=any direction, Smart=toward enemy, Last dir=repeat"
+            android:textSize="11sp"
+            android:textColor="#666" />
+        <RadioGroup
+            android:id="@+id/directionGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <RadioButton android:id="@+id/dirRandom" android:text="Random" android:layout_weight="1" android:layout_width="0dp" />
+            <RadioButton android:id="@+id/dirSmart" android:text="Smart" android:layout_weight="1" android:layout_width="0dp" />
+        </RadioGroup>
+
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#ccc" android:layout_marginVertical="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Joystick Wobble"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Micro-movement variation in joystick"
+            android:textSize="11sp"
+            android:textColor="#666" />
+        <RadioGroup
+            android:id="@+id/wobbleGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <RadioButton android:id="@+id/wobbleOff" android:text="Off" android:layout_weight="1" android:layout_width="0dp" />
+            <RadioButton android:id="@+id/wobbleLight" android:text="Light" android:layout_weight="1" android:layout_width="0dp" />
+            <RadioButton android:id="@+id/wobbleMedium" android:text="Medium" android:layout_weight="1" android:layout_width="0dp" />
+            <RadioButton android:id="@+id/wobbleHeavy" android:text="Heavy" android:layout_weight="1" android:layout_width="0dp" />
+        </RadioGroup>
+
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#ccc" android:layout_marginVertical="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Auto Features"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enabled/disable automatic gameplay features"
+            android:textSize="11sp"
+            android:textColor="#666" />
+        <CheckBox
+            android:id="@+id/autoLevelUpCheck"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Auto Level Up Skills (press + when available)" />
+        <CheckBox
+            android:id="@+id/autoBuyCheck"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Auto Buy Items (via shop recommendation)" />
+        <CheckBox
+            android:id="@+id/useCombosCheck"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Use Hero Combos (skill rotation patterns)" />
+
+        <Button
+            android:id="@+id/saveSettingsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save Settings"
+            android:layout_marginTop="20dp" />
+
+        <Button
+            android:id="@+id/resetDefaultsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Reset to Defaults"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center"
+            android:text="These settings affect how the AI plays. Adjust for more human-like or aggressive gameplay."
+            android:textSize="11sp"
+            android:textColor="#999"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="24dp" />
+
+    </LinearLayout>
+</ScrollView>

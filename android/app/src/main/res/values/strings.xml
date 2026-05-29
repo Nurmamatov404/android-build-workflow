@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MLBB AI Trainer</string>
+    <string name="app_title">MLBB AI Trainer v2</string>
+    <string name="status_idle">Status: Idle</string>
+    <string name="status_recording">Status: Recording...</string>
+    <string name="status_stopping">Status: Stopping...</string>
+    <string name="btn_start">Start Recording</string>
+    <string name="btn_stop">Stop Recording</string>
+    <string name="touch_service_check">Touch Service: Not connected</string>
+    <string name="touch_service_connected">Touch Service: Connected</string>
+    <string name="session_prefix">Session: </string>
+    <string name="guide_text">MLBB AI Trainer v2\n\nFlow:\n1. +Add Hero → enter name\n2. Tap hero → add YouTube URLs\n3. On PC: train model from videos\n4. Import .tflite back to hero\n5. Show Overlay → select hero → Start\n6. AI plays with human-like behavior!</string>
+</resources>

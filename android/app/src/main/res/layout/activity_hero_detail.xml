@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/heroDetailTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Model Status Section -->
+        <TextView
+            android:id="@+id/modelStatusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Model: Not imported"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:id="@+id/modelFileNameText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Import a .tflite file"
+            android:textSize="12sp"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/importModelButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Import Trained Model (.tflite)"
+            android:textSize="13sp"
+            android:layout_marginBottom="12dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#44000000"
+            android:layout_marginBottom="12dp" />
+
+        <!-- YouTube Videos Section -->
+        <TextView
+            android:id="@+id/videoCountText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Videos: 0"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <Button
+                android:id="@+id/addVideoButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="+ Add YouTube URL"
+                android:textSize="13sp"
+                android:layout_marginEnd="4dp" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Saved videos:"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/videoListView"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:background="@android:drawable/dialog_holo_light_frame" />
+
+        <!-- Instructions -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="How to train on PC:\n1. Copy YouTube URLs from above\n2. On PC run:\n   bash train/youtube_pipeline.sh\n3. Copy the .tflite to phone\n4. Import it here with the button above"
+            android:textSize="11sp"
+            android:padding="12dp"
+            android:layout_marginTop="12dp"
+            android:background="@android:drawable/dialog_holo_light_frame"
+            android:lineSpacingExtra="3dp" />
+
+    </LinearLayout>
+</ScrollView>
