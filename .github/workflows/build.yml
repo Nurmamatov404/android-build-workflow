@@ -1,0 +1,141 @@
+name: Android APK Build
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type (debug/release)'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: '34.0.0'
+          ndk-version: ''
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew || true
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Check local.properties
+        run: |
+          if [ ! -f local.properties ]; then
+            echo "sdk.dir=$ANDROID_HOME" > local.properties
+          fi
+
+      - name: Create error log directory
+        run: mkdir -p build-reports
+
+      - name: Build APK with full error capture
+        id: build
+        continue-on-error: true
+        run: |
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'debug' }}"
+          echo "Building $BUILD_TYPE APK..."
+
+          {
+            ./gradlew assemble${BUILD_TYPE^} --no-daemon --stacktrace 2>&1
+          } | tee build-reports/full_build.log
+
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+          echo "build_type=$BUILD_TYPE" >> $GITHUB_OUTPUT
+
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "BUILD FAILED (exit code: $EXIT_CODE)"
+            grep -E "(ERROR|FAILURE|Exception|error:|Error:|\.java:\d+:|BUILD FAILED)" \
+              build-reports/full_build.log > build-reports/error.log || true
+            echo "Errors extracted to build-reports/error.log"
+          else
+            echo "BUILD SUCCEEDED"
+            echo " " > build-reports/error.log
+          fi
+
+      - name: Upload error log (if build failed)
+        if: steps.build.outputs.exit_code != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-error-log
+          path: build-reports/
+          retention-days: 7
+
+      - name: Find APK files
+        if: steps.build.outputs.exit_code == '0'
+        id: find_apk
+        run: |
+          APK_COUNT=$(find . -path "*/build/outputs/apk/*/*.apk" 2>/dev/null | wc -l)
+          echo "apk_count=$APK_COUNT" >> $GITHUB_OUTPUT
+          if [ "$APK_COUNT" -gt 0 ]; then
+            echo "APK files found:"
+            find . -path "*/build/outputs/apk/*/*.apk" -ls
+          else
+            echo "No APK files found!"
+            find . -name "*.apk" 2>/dev/null || echo "No .apk files anywhere"
+          fi
+
+      - name: Upload APK artifacts
+        if: steps.build.outputs.exit_code == '0' && steps.find_apk.outputs.apk_count != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-${{ steps.build.outputs.build_type }}
+          path: |
+            **/build/outputs/apk/**/*.apkt
+            **/build/outputs/apk/**/*.apk
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload full build report
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-report
+          path: build-reports/
+          retention-days: 7
+
+      - name: Fail workflow if build failed
+        if: steps.build.outputs.exit_code != '0'
+        run: |
+          echo "==========================================="
+          echo "  ❌ BUILD FAILED"
+          echo "==========================================="
+          echo "Errors saved in 'build-error-log' artifact."
+          echo "Download it from the Actions tab."
+          echo ""
+          echo "=== ERROR LOG SUMMARY ==="
+          if [ -f build-reports/error.log ]; then
+            cat build-reports/error.log
+          fi
+          exit 1
