@@ -98,7 +98,7 @@ class InferenceService : Service() {
                 settings.heroIndex = heroId.toInt()
                 startInference(
                     intent.getIntExtra(EXTRA_RESULT_CODE, -1),
-                    intent.getParcelableExtra(EXTRA_DATA, Intent::class.java)
+                    intent.getParcelableExtra<Intent>(EXTRA_DATA)
                 )
             }
             ACTION_STOP -> stopInference()
