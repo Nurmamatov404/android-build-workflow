@@ -31,8 +31,25 @@ SEQ_LEN = 4
 IMG_SIZE = 224
 FPS = 10
 
+def is_youtube(url):
+    return "youtube.com" in url or "youtu.be" in url
+
+def is_google_drive(url):
+    return "drive.google.com" in url or "docs.google.com" in url
+
 def download_video(url, out_dir):
-    """yt_dlp library orqali video yuklab olish — bir necha usul bilan"""
+    """URL turiga qarab video yuklab olish"""
+    os.makedirs(out_dir, exist_ok=True)
+
+    if is_youtube(url):
+        return _download_youtube(url, out_dir)
+    elif is_google_drive(url):
+        return _download_drive(url, out_dir)
+    else:
+        return _download_direct(url, out_dir)
+
+def _download_youtube(url, out_dir):
+    """yt_dlp orqali YouTube video yuklash"""
     try:
         from yt_dlp import YoutubeDL
     except ImportError:
@@ -40,8 +57,6 @@ def download_video(url, out_dir):
         from yt_dlp import YoutubeDL
 
     out_template = os.path.join(out_dir, "%(id)s.%(ext)s")
-
-    # Bir necha extractor strategiyalarni sinab ko'rish
     strategies = [
         {"extractor_args": {"youtube": {"player_client": ["android"]}}},
         {"extractor_args": {"youtube": {"player_client": ["android", "web"]}}},
@@ -68,27 +83,59 @@ def download_video(url, out_dir):
             with YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
                 video_id = info.get("id", "unknown")
-                ext = info.get("ext", "mp4")
-                expected = os.path.join(out_dir, f"{video_id}.{ext}")
-
-                # Turli extensionlarni tekshirish
                 for f in os.listdir(out_dir):
                     if f.startswith(video_id):
                         return os.path.join(out_dir, f)
 
-                if os.path.exists(expected):
-                    return expected
-
-                # Hech qanday fayl topilmasa
-                print(f"[WARN] Strategy {i+1}: fayl topilmadi, boshqa usul sinanmoqda...")
-
         except Exception as e:
             if i < len(strategies) - 1:
-                print(f"[WARN] Strategy {i+1} failed ({e}), trying next...")
+                print(f"[WARN] YouTube strategy {i+1} failed ({e}), trying next...")
             else:
                 raise
 
-    raise RuntimeError(f"Video yuklab olinmadi: {url}")
+    raise RuntimeError(f"YouTube video yuklab olinmadi: {url}")
+
+def _download_drive(url, out_dir):
+    """Google Drive dan fayl yuklash (gdown)"""
+    try:
+        import gdown
+    except ImportError:
+        subprocess.run([sys.executable, "-m", "pip", "install", "-q", "gdown"], check=True)
+        import gdown
+
+    output = os.path.join(out_dir, "drive_video.mp4")
+    print(f"[INFO] Google Drive dan yuklanmoqda: {url}")
+    gdown.download(url, output, quiet=False, fuzzy=True)
+    if not os.path.exists(output):
+        raise RuntimeError(f"Google Drive dan yuklab olinmadi: {url}")
+    return output
+
+def _download_direct(url, out_dir):
+    """To'g'ridan-to'g'ri URL dan yuklash (requests/wget)"""
+    import requests
+    fname = url.split("/")[-1].split("?")[0] or "direct_video.mp4"
+    output = os.path.join(out_dir, fname)
+
+    print(f"[INFO] To'g'ridan-to'g'ri yuklanmoqda: {url}")
+    resp = requests.get(url, stream=True, timeout=300, headers={
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+    })
+    resp.raise_for_status()
+
+    total = int(resp.headers.get("content-length", 0))
+    with open(output, "wb") as f:
+        if total:
+            with tqdm(total=total, unit="B", unit_scale=True, desc=fname) as pbar:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    f.write(chunk)
+                    pbar.update(len(chunk))
+        else:
+            for chunk in resp.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+    if not os.path.exists(output) or os.path.getsize(output) == 0:
+        raise RuntimeError(f"URL dan yuklab olinmadi: {url}")
+    return output
 
 
 def extract_frames(video_path, out_dir, fps=FPS):

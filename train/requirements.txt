@@ -2,5 +2,6 @@ tensorflow~=2.15.0
 opencv-python-headless
 numpy
 yt-dlp
+gdown>=5.0
 Pillow
 tqdm

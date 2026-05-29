@@ -97,6 +97,11 @@
 - `.tflite` fayl artifact sifatida yuklanadi
 - Telefonda: Qahramon tafsilotlari → **Import Trained Model (.tflite)**
 
+### Qo'llab-quvvatlanadigan URL turlari
+- **YouTube**: `youtube.com/watch?v=...` yoki `youtu.be/...` → `yt_dlp` bilan 4 xil extractor strategiya
+- **Google Drive**: `drive.google.com/file/d/...` → `gdown` bilan avtomatik yuklash
+- **Direct URL**: istalgan `.mp4` yoki video fayl linki → `requests` bilan stream yuklash
+
 ### Tuzatilgan muammolar (`f35785e`)
 | Xatolik | Sabab | Fix |
 |---------|-------|-----|
