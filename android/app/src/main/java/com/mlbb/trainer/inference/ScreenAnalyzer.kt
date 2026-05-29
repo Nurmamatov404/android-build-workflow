@@ -177,8 +177,8 @@ class ScreenAnalyzer {
 
                 if (brightness > 100) {
                     val area = countSimilar(pixels, w, h, x, y, 30)
-                    if (area > MIN_SKILL_AREA / 2 && area > bestScore) {
-                        bestScore = area
+                    if (area > MIN_SKILL_AREA / 2 && area.toFloat() > bestScore) {
+                        bestScore = area.toFloat()
                         bestX = x; bestY = y
                     }
                 }

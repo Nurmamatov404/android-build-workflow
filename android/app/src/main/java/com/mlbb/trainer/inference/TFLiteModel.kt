@@ -14,7 +14,7 @@ import java.nio.channels.FileChannel
 
 class TFLiteModel(
     private val context: Context,
-    modelPath: String,
+    private val modelPath: String,
     private val inputSize: Int = 224,
     private val seqLen: Int = 4,
     private val useGpu: Boolean = true

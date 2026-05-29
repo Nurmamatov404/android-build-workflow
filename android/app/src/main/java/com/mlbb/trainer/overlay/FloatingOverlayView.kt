@@ -151,10 +151,9 @@ class FloatingOverlayView(
         container.addView(statusRow)
 
         val scrollView = ScrollView(context).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 0
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
             )
-            (layoutParams as LinearLayout.LayoutParams).weight = 1f
         }
         heroListContainer = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -163,7 +162,7 @@ class FloatingOverlayView(
         container.addView(scrollView)
 
         container.addView(View(context).apply {
-            layoutParams = ViewGroup.LayoutParams(
+            layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 1
             ).apply { setMargins(0, 8, 0, 8) }
             setBackgroundColor(0x44FFFFFF.toInt())
@@ -188,7 +187,7 @@ class FloatingOverlayView(
             setBackgroundColor(0xFF2E7D32.toInt())
             textSize = 14f
             setPadding(16, 8, 16, 8)
-            layoutParams = ViewGroup.LayoutParams(
+            layoutParams = LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
             ).apply { setMargins(4, 0, 4, 0) }
             setOnClickListener {
@@ -207,7 +206,7 @@ class FloatingOverlayView(
             setBackgroundColor(0xFFC62828.toInt())
             textSize = 14f
             setPadding(16, 8, 16, 8)
-            layoutParams = ViewGroup.LayoutParams(
+            layoutParams = LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
             ).apply { setMargins(4, 0, 4, 0) }
             setOnClickListener {
@@ -222,7 +221,7 @@ class FloatingOverlayView(
             setBackgroundColor(0xFF546E7A.toInt())
             textSize = 14f
             setPadding(16, 8, 16, 8)
-            layoutParams = ViewGroup.LayoutParams(
+            layoutParams = LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
             ).apply { setMargins(4, 0, 4, 0) }
             setOnClickListener { callback.onExit() }
@@ -271,7 +270,7 @@ class FloatingOverlayView(
             orientation = LinearLayout.HORIZONTAL
             setPadding(8, 8, 8, 8)
             setBackgroundColor(0x33FFFFFF.toInt())
-            layoutParams = ViewGroup.LayoutParams(
+            layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { setMargins(0, 0, 0, 4) }
@@ -288,7 +287,7 @@ class FloatingOverlayView(
                         else 0x33FFFFFF.toInt()
                     )
                 }
-                row.setBackgroundColor(0x55FFD700.toInt())
+                setBackgroundColor(0x55FFD700.toInt())
             }
         }
         row.tag = hero.id
@@ -297,7 +296,7 @@ class FloatingOverlayView(
             text = hero.name
             textSize = 14f
             setTextColor(0xFFFFFFFF.toInt())
-            layoutParams = ViewGroup.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         })
         row.addView(TextView(context).apply {
             text = if (hero.modelStatus == "ready") "\u2705" else "\uD83D\uDCF9"

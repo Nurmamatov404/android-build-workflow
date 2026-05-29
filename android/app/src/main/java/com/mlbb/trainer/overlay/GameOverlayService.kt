@@ -26,7 +26,6 @@ class GameOverlayService : Service() {
         var isOverlayShowing = false
             private set
         var isAiRunning = false
-            private set
     }
 
     private var overlayView: FloatingOverlayView? = null
