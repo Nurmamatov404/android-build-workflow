@@ -22,7 +22,7 @@
             android:id="@+id/modelStatusText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Model: Not imported"
+            android:text="Model: Import qilinmagan"
             android:textSize="14sp"
             android:textStyle="bold"
             android:layout_marginTop="8dp" />
@@ -31,7 +31,7 @@
             android:id="@+id/modelFileNameText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Import a .tflite file"
+            android:text=".tflite faylini import qilish"
             android:textSize="12sp"
             android:layout_marginBottom="8dp" />
 
@@ -39,7 +39,7 @@
             android:id="@+id/importModelButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Import Trained Model (.tflite)"
+            android:text="O\'qitilgan Modelni Import qilish (.tflite)"
             android:textSize="13sp"
             android:layout_marginBottom="12dp" />
 
@@ -54,7 +54,7 @@
             android:id="@+id/videoCountText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Videos: 0"
+            android:text="Videolar: 0"
             android:textSize="14sp"
             android:layout_marginBottom="8dp" />
 
@@ -69,7 +69,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="+ Add YouTube URL"
+                android:text="+ YouTube URL qo\'shish"
                 android:textSize="13sp"
                 android:layout_marginEnd="4dp" />
         </LinearLayout>
@@ -77,7 +77,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Saved videos:"
+            android:text="Saqlangan videolar:"
             android:textSize="13sp"
             android:textStyle="bold"
             android:layout_marginBottom="4dp" />
@@ -92,7 +92,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="How to train on PC:\n1. Copy YouTube URLs from above\n2. On PC run:\n   bash train/youtube_pipeline.sh\n3. Copy the .tflite to phone\n4. Import it here with the button above"
+            android:text="Kompyuterda o\'rgatish:\n1. Yuqoridagi YouTube URL lardan nusxa oling\n2. Kompyuterda ishga tushiring:\n   bash train/youtube_pipeline.sh\n3. .tflite faylini telefonga nusxalang\n4. Yuqoridagi tugma orqali import qiling"
             android:textSize="11sp"
             android:padding="12dp"
             android:layout_marginTop="12dp"

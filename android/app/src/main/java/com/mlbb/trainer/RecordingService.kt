@@ -70,7 +70,7 @@ class RecordingService : Service() {
     private fun startRecording(resultCode: Int, data: Intent) {
         if (isRecording) return
 
-        val notification = createNotification("Starting recording...", false)
+        val notification = createNotification("Yozib olish boshlanmoqda...", false)
         startForeground(NOTIFICATION_ID, notification)
 
         sessionDir = createSessionDir()
@@ -98,7 +98,7 @@ class RecordingService : Service() {
         }
 
         isRecording = true
-        updateNotification("Recording... (0 frames)")
+        updateNotification("Yozilmoqda... (0 kadr)")
     }
 
     private fun stopRecording() {
@@ -146,7 +146,7 @@ class RecordingService : Service() {
 
     private fun createNotification(text: String, showStop: Boolean): Notification {
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("MLBB Trainer")
+            .setContentTitle("MLBB Trener")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_menu_camera)
             .setOngoing(true)
@@ -159,10 +159,10 @@ class RecordingService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "MLBB Recording",
+                "MLBB Yozib Olish",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Recording session notification"
+                description = "Yozib olish seansi bildirishnomasi"
                 setShowBadge(false)
             }
             val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager

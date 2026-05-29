@@ -93,7 +93,7 @@ class FloatingOverlayView(
         }
 
         container.addView(TextView(context).apply {
-            text = "\u22EF MLBB AI Controller \u22EF"
+            text = "\u22EF MLBB AI Boshqaruvi \u22EF"
             textSize = 14f
             gravity = Gravity.CENTER
             setTextColor(0xFFAAAAAA.toInt())
@@ -101,7 +101,7 @@ class FloatingOverlayView(
         })
 
         heroInfoText = TextView(context).apply {
-            text = "Select a hero below"
+            text = "Quyida qahramonni tanlang"
             textSize = 12f
             setTextColor(0xFFCCCCCC.toInt())
             setPadding(0, 0, 0, 4)
@@ -109,7 +109,7 @@ class FloatingOverlayView(
         container.addView(heroInfoText)
 
         selectedHeroText = TextView(context).apply {
-            text = "Hero: None selected"
+            text = "Qahramon: Hech biri tanlanmagan"
             textSize = 14f
             setTextColor(0xFFFFD700.toInt())
             setPadding(0, 0, 0, 4)
@@ -134,7 +134,7 @@ class FloatingOverlayView(
         statusRow.addView(apmModeText)
 
         levelText = TextView(context).apply {
-            text = "Lv: --"
+            text = "Dar: --"
             textSize = 11f
             setTextColor(0xFF88FF88.toInt())
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -142,7 +142,7 @@ class FloatingOverlayView(
         statusRow.addView(levelText)
 
         phaseText = TextView(context).apply {
-            text = "Phase: ---"
+            text = "Faza: ---"
             textSize = 11f
             setTextColor(0xFFFFCC88.toInt())
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -169,7 +169,7 @@ class FloatingOverlayView(
         })
 
         statusText = TextView(context).apply {
-            text = "Status: Idle"
+            text = "Holat: Bo'sh"
             textSize = 12f
             setTextColor(0xFF88FF88.toInt())
             setPadding(0, 0, 0, 8)
@@ -182,7 +182,7 @@ class FloatingOverlayView(
         }
 
         buttonRow.addView(Button(context).apply {
-            text = "\u25B6 Start"
+            text = "\u25B6 Boshlash"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF2E7D32.toInt())
             textSize = 14f
@@ -195,13 +195,13 @@ class FloatingOverlayView(
                     callback.onStartAI(selectedHeroId, selectedHeroName)
                     setStatusRunning()
                 } else {
-                    Toast.makeText(context, "Select a hero first!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Avval qahramon tanlang!", Toast.LENGTH_SHORT).show()
                 }
             }
         })
 
         buttonRow.addView(Button(context).apply {
-            text = "\u23F9 Stop"
+            text = "\u23F9 To'xtatish"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFFC62828.toInt())
             textSize = 14f
@@ -216,7 +216,7 @@ class FloatingOverlayView(
         })
 
         buttonRow.addView(Button(context).apply {
-            text = "\u2715 Exit"
+            text = "\u2715 Chiqish"
             setTextColor(0xFFFFFFFF.toInt())
             setBackgroundColor(0xFF546E7A.toInt())
             textSize = 14f
@@ -249,12 +249,12 @@ class FloatingOverlayView(
 
     fun updateStatus(apmMode: String, level: String, phase: String) {
         apmModeText?.text = "APM: $apmMode"
-        levelText?.text = "Lv: $level"
-        phaseText?.text = "Phase: $phase"
+        levelText?.text = "Dar: $level"
+        phaseText?.text = "Faza: $phase"
     }
 
-    fun setStatusRunning() { statusText.text = "Status: Running" }
-    fun setStatusStopped() { statusText.text = "Status: Stopped" }
+    fun setStatusRunning() { statusText.text = "Holat: Ishlamoqda" }
+    fun setStatusStopped() { statusText.text = "Holat: To'xtatildi" }
 
     fun updateHeroList(heroes: List<Hero>) {
         heroListContainer.removeAllViews()
@@ -262,7 +262,7 @@ class FloatingOverlayView(
             val row = createHeroRow(hero)
             heroListContainer.addView(row)
         }
-        heroInfoText?.text = "Heroes: ${heroes.size} available"
+        heroInfoText?.text = "Qahramonlar: ${heroes.size} ta mavjud"
     }
 
     private fun createHeroRow(hero: Hero): View {
@@ -277,7 +277,7 @@ class FloatingOverlayView(
             setOnClickListener {
                 selectedHeroId = hero.id
                 selectedHeroName = hero.name
-                selectedHeroText.text = "Hero: ${hero.name}"
+                selectedHeroText.text = "Qahramon: ${hero.name}"
                 callback.onHeroSelected(hero.id, hero.name)
 
                 for (i in 0 until heroListContainer.childCount) {

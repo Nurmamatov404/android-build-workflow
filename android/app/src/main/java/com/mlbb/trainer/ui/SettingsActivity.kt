@@ -13,7 +13,7 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        title = "AI Settings"
+        title = "AI Sozlamalari"
 
         settings = AISettings(this)
         loadSettings()
@@ -98,7 +98,7 @@ class SettingsActivity : AppCompatActivity() {
         settings.autoBuyItems = findViewById<CheckBox>(R.id.autoBuyCheck).isChecked
         settings.useHeroCombos = findViewById<CheckBox>(R.id.useCombosCheck).isChecked
 
-        Toast.makeText(this, "Settings saved!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Sozlamalar saqlandi!", Toast.LENGTH_SHORT).show()
         finish()
     }
 
@@ -111,7 +111,7 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<CheckBox>(R.id.autoLevelUpCheck).isChecked = true
         findViewById<CheckBox>(R.id.autoBuyCheck).isChecked = true
         findViewById<CheckBox>(R.id.useCombosCheck).isChecked = true
-        Toast.makeText(this, "Defaults restored. Save to apply.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Standartlar qayta tiklandi. Qo'llash uchun saqlang.", Toast.LENGTH_SHORT).show()
     }
 
     override fun onSupportNavigateUp(): Boolean {

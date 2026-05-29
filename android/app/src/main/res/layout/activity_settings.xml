@@ -12,7 +12,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="AI Settings"
+            android:text="AI Sozlamalari"
             android:textSize="22sp"
             android:textStyle="bold"
             android:layout_marginBottom="16dp" />
@@ -20,13 +20,13 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Random Offset"
+            android:text="Tasodifiy Siltanish"
             android:textStyle="bold"
             android:textSize="14sp" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="How far from exact position AI taps"
+            android:text="AI aniq joydan qanchalik uzoqda bossin"
             android:textSize="11sp"
             android:textColor="#666" />
         <RadioGroup
@@ -45,13 +45,13 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Skill Miss Rate"
+            android:text="Mahoratni O\'tkazib Yuborish"
             android:textStyle="bold"
             android:textSize="14sp" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Chance AI misses skill direction (human-like)"
+            android:text="AI mahorat yo\'nalishini o\'tkazib yuborish ehtimoli"
             android:textSize="11sp"
             android:textColor="#666" />
         <SeekBar
@@ -71,13 +71,13 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="APM Mode"
+            android:text="APM Rejimi"
             android:textStyle="bold"
             android:textSize="14sp" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Action speed: Lazy=slow, Normal=mixed, Intense=fast, Auto=adapts"
+            android:text="Harakat tezligi: Lazy=sekin, Normal=aralash, Intense=tez, Auto=moslashadi"
             android:textSize="11sp"
             android:textColor="#666" />
         <RadioGroup
@@ -96,13 +96,13 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Skill Direction"
+            android:text="Mahorat Yo\'nalishi"
             android:textStyle="bold"
             android:textSize="14sp" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Random=any direction, Smart=toward enemy, Last dir=repeat"
+            android:text="Random=istalgan yo\'nalish, Smart=dushmanga qarab, Last dir=takrorlash"
             android:textSize="11sp"
             android:textColor="#666" />
         <RadioGroup
@@ -119,13 +119,13 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Joystick Wobble"
+            android:text="Joystick Tebranishi"
             android:textStyle="bold"
             android:textSize="14sp" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Micro-movement variation in joystick"
+            android:text="Joystickdagi mikro-harakat o\'zgarishlari"
             android:textSize="11sp"
             android:textColor="#666" />
         <RadioGroup
@@ -133,10 +133,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
-            <RadioButton android:id="@+id/wobbleOff" android:text="Off" android:layout_weight="1" android:layout_width="0dp" />
-            <RadioButton android:id="@+id/wobbleLight" android:text="Light" android:layout_weight="1" android:layout_width="0dp" />
-            <RadioButton android:id="@+id/wobbleMedium" android:text="Medium" android:layout_weight="1" android:layout_width="0dp" />
-            <RadioButton android:id="@+id/wobbleHeavy" android:text="Heavy" android:layout_weight="1" android:layout_width="0dp" />
+            <RadioButton android:id="@+id/wobbleOff" android:text="O\'chirilgan" android:layout_weight="1" android:layout_width="0dp" />
+            <RadioButton android:id="@+id/wobbleLight" android:text="Yengil" android:layout_weight="1" android:layout_width="0dp" />
+            <RadioButton android:id="@+id/wobbleMedium" android:text="O\'rtacha" android:layout_weight="1" android:layout_width="0dp" />
+            <RadioButton android:id="@+id/wobbleHeavy" android:text="Og\'ir" android:layout_weight="1" android:layout_width="0dp" />
         </RadioGroup>
 
         <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#ccc" android:layout_marginVertical="12dp" />
@@ -144,50 +144,50 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Auto Features"
+            android:text="Avtomatik Xususiyatlar"
             android:textStyle="bold"
             android:textSize="14sp" />
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Enabled/disable automatic gameplay features"
+            android:text="Avtomatik o\'yin xususiyatlarini yoqish/o\'chirish"
             android:textSize="11sp"
             android:textColor="#666" />
         <CheckBox
             android:id="@+id/autoLevelUpCheck"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Auto Level Up Skills (press + when available)" />
+            android:text="Mahoratlarni avtomatik oshirish (+ mavjud bo\'lganda)" />
         <CheckBox
             android:id="@+id/autoBuyCheck"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Auto Buy Items (via shop recommendation)" />
+            android:text="Buyumlarni avtomatik sotib olish (do\'kon tavsiyasi orqali)" />
         <CheckBox
             android:id="@+id/useCombosCheck"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Use Hero Combos (skill rotation patterns)" />
+            android:text="Qahramon kombolarini ishlatish (mahorat aylanishlari)" />
 
         <Button
             android:id="@+id/saveSettingsButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Save Settings"
+            android:text="Sozlamalarni saqlash"
             android:layout_marginTop="20dp" />
 
         <Button
             android:id="@+id/resetDefaultsButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Reset to Defaults"
+            android:text="Standartga qaytarish"
             android:layout_marginTop="8dp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAlignment="center"
-            android:text="These settings affect how the AI plays. Adjust for more human-like or aggressive gameplay."
+            android:text="Bu sozlamalar AI o\'yin uslubiga ta\'sir qiladi. Insoniy yoki tajovuzkor o\'yin uchun sozlang."
             android:textSize="11sp"
             android:textColor="#999"
             android:layout_marginTop="16dp"

@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         if (result.resultCode == RESULT_OK && result.data != null) {
             startRecordingService(result.resultCode, result.data!!)
         } else {
-            Toast.makeText(this, "Screen capture permission denied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Ekranni yozib olishga ruxsat berilmadi", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -47,9 +47,9 @@ class MainActivity : AppCompatActivity() {
             val frames = intent.getIntExtra("frames", 0)
             val touches = intent.getIntExtra("touches", 0)
             val path = intent.getStringExtra("session_path") ?: ""
-            statusText.text = "Status: Stopped"
+            statusText.text = "Holat: To'xtatildi"
             Toast.makeText(this@MainActivity,
-                "Saved: $frames frames, $touches touches", Toast.LENGTH_LONG).show()
+                "Saqlangan: $frames kadr, $touches teginish", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -89,9 +89,9 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         updateOverlayStatus()
         if (RecordingService.isRecording) {
-            statusText.text = "Status: Recording..."
+            statusText.text = "Holat: Yozilmoqda..."
         } else {
-            statusText.text = "Status: Idle"
+            statusText.text = "Holat: Bo'sh"
         }
     }
 
@@ -110,20 +110,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun showAddHeroDialog() {
         val input = EditText(this).apply {
-            hint = "Hero name (e.g. Ling, Fanny, Hayabusa)"
+            hint = "Qahramon nomi (masalan: Ling, Fanny, Hayabusa)"
         }
 
         AlertDialog.Builder(this)
-            .setTitle("Add Hero")
-            .setMessage("Enter Mobile Legends hero name:")
+            .setTitle("Qahramon qo'shish")
+            .setMessage("Mobile Legends qahramon nomini kiriting:")
             .setView(input)
-            .setPositiveButton("Add") { _, _ ->
+            .setPositiveButton("Qo'shish") { _, _ ->
                 val name = input.text.toString().trim()
                 if (name.isNotEmpty()) {
                     addHero(name)
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton("Bekor qilish", null)
             .show()
     }
 
@@ -131,21 +131,21 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val hero = Hero(name = name)
             database.heroDao().insert(hero)
-            Toast.makeText(this@MainActivity, "Hero '$name' added!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@MainActivity, "'$name' qahramoni qo'shildi!", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun deleteHero(hero: Hero) {
         AlertDialog.Builder(this)
-            .setTitle("Delete Hero")
-            .setMessage("Delete ${hero.name} and all its videos?")
-            .setPositiveButton("Delete") { _, _ ->
+            .setTitle("Qahramonni o'chirish")
+            .setMessage("${hero.name} va uning barcha videolarini o'chirish?")
+            .setPositiveButton("O'chirish") { _, _ ->
                 lifecycleScope.launch {
                     database.youTubeVideoDao().deleteAllForHero(hero.id)
                     database.heroDao().delete(hero)
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton("Bekor qilish", null)
             .show()
     }
 
@@ -182,28 +182,28 @@ class MainActivity : AppCompatActivity() {
                 )
                 startActivity(intent)
             } else {
-                Toast.makeText(this, "Overlay permission already granted", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Qoplama ruxsati allaqachon berilgan", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     private fun updateOverlayStatus() {
         overlayStatusText.text = if (GameOverlayService.isOverlayShowing) {
-            "Overlay: Active"
+            "Qoplama: Faol"
         } else {
-            "Overlay: Inactive (tap Show to start)"
+            "Qoplama: Faol emas (boshlash uchun Ko'rsatish-ni bosing)"
         }
     }
 
     private fun checkAndStartRecording() {
         if (!TouchEventService.isConnected) {
             AlertDialog.Builder(this)
-                .setTitle("Accessibility Service Required")
-                .setMessage("Enable Accessibility Service:\nSettings > Accessibility > MLBB Trainer")
-                .setPositiveButton("Open Settings") { _, _ ->
+                .setTitle("Maxsus imkoniyatlar xizmati kerak")
+                .setMessage("Maxsus imkoniyatlar xizmatini yoqing:\nSozlamalar > Maxsus imkoniyatlar > MLBB Trener")
+                .setPositiveButton("Sozlamalarni ochish") { _, _ ->
                     startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                 }
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton("Bekor qilish", null)
                 .show()
             return
         }
@@ -222,7 +222,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             startService(intent)
         }
-        statusText.text = "Status: Recording..."
+        statusText.text = "Holat: Yozilmoqda..."
     }
 }
 
@@ -248,9 +248,9 @@ class HeroAdapter(
     override fun onBindViewHolder(holder: HeroViewHolder, position: Int) {
         val hero = heroes[position]
         holder.text1.text = hero.name + if (hero.modelStatus == "ready") " \u2705" else ""
-        holder.text2.text = if (hero.modelStatus == "ready") "Model ready"
-                            else if (hero.modelStatus == "error") "Model error"
-                            else "No model"
+        holder.text2.text = if (hero.modelStatus == "ready") "Model tayyor"
+                            else if (hero.modelStatus == "error") "Model xatosi"
+                            else "Model yo'q"
         holder.itemView.setOnClickListener { onHeroClick(hero) }
         holder.itemView.setOnLongClickListener {
             onHeroLongClick(hero)

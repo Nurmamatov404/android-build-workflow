@@ -80,16 +80,16 @@ class HeroDetailActivity : AppCompatActivity() {
     private fun updateModelUI(hero: Hero) {
         when (hero.modelStatus) {
             "none" -> {
-                modelStatusText.text = "Model: Not imported"
-                modelFileNameText.text = "Import a .tflite file for this hero"
+                modelStatusText.text = "Model: Import qilinmagan"
+                modelFileNameText.text = "Bu qahramon uchun .tflite faylini import qiling"
             }
             "ready" -> {
-                modelStatusText.text = "Model: Ready ✓"
+                modelStatusText.text = "Model: Tayyor ✓"
                 val name = hero.modelPath.split("/").lastOrNull() ?: hero.modelPath
-                modelFileNameText.text = "File: $name"
+                modelFileNameText.text = "Fayl: $name"
             }
             "error" -> {
-                modelStatusText.text = "Model: Error ✗"
+                modelStatusText.text = "Model: Xato ✗"
                 modelFileNameText.text = hero.modelPath
             }
         }
@@ -102,7 +102,7 @@ class HeroDetailActivity : AppCompatActivity() {
     private fun importModelFile(uri: Uri) {
         lifecycleScope.launch {
             try {
-                modelStatusText.text = "Model: Importing..."
+                modelStatusText.text = "Model: Import qilinmoqda..."
                 val heroDir = File(getExternalFilesDir(null), "MLBB_AI")
                 heroDir.mkdirs()
                 val targetFile = File(heroDir, "model_${heroId}.tflite")
@@ -127,7 +127,7 @@ class HeroDetailActivity : AppCompatActivity() {
 
                 loadHeroInfo()
                 Toast.makeText(this@HeroDetailActivity,
-                    "Model imported successfully!", Toast.LENGTH_SHORT).show()
+                    "Model muvaffaqiyatli import qilindi!", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 val hero = database.heroDao().getHeroById(heroId)
                 if (hero != null) {
@@ -137,7 +137,7 @@ class HeroDetailActivity : AppCompatActivity() {
                 }
                 loadHeroInfo()
                 Toast.makeText(this@HeroDetailActivity,
-                    "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    "Import bajarilmadi: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -146,7 +146,7 @@ class HeroDetailActivity : AppCompatActivity() {
         lifecycleScope.launch {
             database.youTubeVideoDao().getVideosForHero(heroId).collect { videos ->
                 videoAdapter.submitList(videos)
-                findViewById<TextView>(R.id.videoCountText).text = "Videos: ${videos.size}"
+                findViewById<TextView>(R.id.videoCountText).text = "Videolar: ${videos.size}"
             }
         }
     }
@@ -157,14 +157,14 @@ class HeroDetailActivity : AppCompatActivity() {
             inputType = android.text.InputType.TYPE_TEXT_VARIATION_URI
         }
         AlertDialog.Builder(this)
-            .setTitle("Add YouTube Video")
-            .setMessage("Paste YouTube gameplay URL for $heroName")
+            .setTitle("YouTube Video qo'shish")
+            .setMessage("$heroName uchun YouTube o'yin URLini joylashtiring")
             .setView(input)
-            .setPositiveButton("Add") { _, _ ->
+            .setPositiveButton("Qo'shish") { _, _ ->
                 val url = input.text.toString().trim()
                 if (url.isNotEmpty()) addVideo(url)
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton("Bekor qilish", null)
             .show()
     }
 
@@ -173,7 +173,7 @@ class HeroDetailActivity : AppCompatActivity() {
             database.youTubeVideoDao().insert(
                 YouTubeVideo(heroId = heroId, url = url, title = extractTitle(url))
             )
-            Toast.makeText(this@HeroDetailActivity, "Video added!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@HeroDetailActivity, "Video qo'shildi!", Toast.LENGTH_SHORT).show()
         }
     }
 

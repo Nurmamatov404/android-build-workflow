@@ -122,7 +122,7 @@ class InferenceService : Service() {
         currentCombos = comboProvider.getCombos(heroName, 1, settings.apmMode)
         currentComboIndex = -1; farmCycle = 0
 
-        val notification = createNotification("AI starting...")
+        val notification = createNotification("AI ishga tushmoqda...")
         startForeground(NOTIFICATION_ID, notification)
 
         if (modelPath.isNotEmpty()) {
@@ -566,7 +566,7 @@ class InferenceService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(
                 NotificationChannel(CHANNEL_ID, "MLBB AI", NotificationManager.IMPORTANCE_LOW).apply {
-                    description = "AI inference service"; setShowBadge(false)
+                    description = "AI xulosa xizmati"; setShowBadge(false)
                 }
             )
         }

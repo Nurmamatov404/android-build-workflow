@@ -56,7 +56,7 @@ class GameOverlayService : Service() {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!Settings.canDrawOverlays(this)) {
-                Toast.makeText(this, "Overlay permission required!", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Qoplama ruxsati talab qilinadi!", Toast.LENGTH_LONG).show()
                 val intent = Intent(
                     Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     android.net.Uri.parse("package:$packageName")
@@ -67,7 +67,7 @@ class GameOverlayService : Service() {
             }
         }
 
-        val notification = createNotification("Overlay active")
+        val notification = createNotification("Qoplama faol")
         startForeground(NOTIFICATION_ID, notification)
 
         val wm = getSystemService(WINDOW_SERVICE) as android.view.WindowManager
@@ -82,7 +82,7 @@ class GameOverlayService : Service() {
                     withContext(Dispatchers.Main) {
                         if (hero?.modelStatus != "ready") {
                             Toast.makeText(this@GameOverlayService,
-                                "No trained model for $heroName! Import a .tflite first.",
+                                "$heroName uchun o'qitilgan model yo'q! Avval .tflite import qiling.",
                                 Toast.LENGTH_LONG).show()
                         } else {
                             startAiMode()
@@ -160,7 +160,7 @@ class GameOverlayService : Service() {
     private fun startAiMode() {
         if (isAiRunning) return
         if (currentHeroId < 0 || currentModelPath.isEmpty()) {
-            Toast.makeText(this, "No hero/model selected!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Qahramon/model tanlanmagan!", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -177,7 +177,7 @@ class GameOverlayService : Service() {
         }
 
         isAiRunning = true
-        Toast.makeText(this, "AI started for $currentHeroName", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "$currentHeroName uchun AI ishga tushirildi", Toast.LENGTH_SHORT).show()
     }
 
     private fun stopAiMode() {
@@ -187,12 +187,12 @@ class GameOverlayService : Service() {
         }
         startService(intent)
         isAiRunning = false
-        Toast.makeText(this, "AI stopped", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "AI to'xtatildi", Toast.LENGTH_SHORT).show()
     }
 
     private fun createNotification(text: String): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("MLBB AI Overlay")
+            .setContentTitle("MLBB AI Qoplamasi")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_menu_manage)
             .setOngoing(true)
@@ -203,10 +203,10 @@ class GameOverlayService : Service() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID, "MLBB Overlay",
+                CHANNEL_ID, "MLBB Qoplamasi",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Overlay service notification"
+                description = "Qoplama xizmati bildirishnomasi"
                 setShowBadge(false)
             }
             (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
