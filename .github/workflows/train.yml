@@ -9,12 +9,12 @@ on:
         type: string
         default: 'https://youtube.com/...'
       epochs:
-        description: 'O\'qitish epochlari soni'
+        description: "O'qitish epochlari soni"
         required: false
         type: number
         default: 20
       hero_name:
-        description: 'Qahramon nomi (fayl nomiga qo\'shiladi)'
+        description: "Qahramon nomi (fayl nomiga qo'shiladi)"
         required: false
         type: string
         default: 'custom'
