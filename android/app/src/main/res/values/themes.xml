@@ -2,11 +2,8 @@
 <resources>
     <style name="Theme.MLBBTrainer" parent="Theme.AppCompat.DayNight.DarkActionBar">
         <item name="colorPrimary">#FF6200EE</item>
-        <item name="colorPrimaryVariant">#FF3700B3</item>
-        <item name="colorOnPrimary">#FFFFFFFF</item>
-        <item name="colorSecondary">#FF03DAC5</item>
-        <item name="colorSecondaryVariant">#FF018786</item>
-        <item name="colorOnSecondary">#FF000000</item>
+        <item name="colorPrimaryDark">#FF3700B3</item>
+        <item name="colorAccent">#FF03DAC5</item>
         <item name="android:statusBarColor">#FF3700B3</item>
     </style>
 </resources>
