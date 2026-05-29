@@ -20,7 +20,6 @@ import android.util.DisplayMetrics
 import android.util.Log
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
-import com.mlbb.trainer.R
 import com.mlbb.trainer.overlay.GameOverlayService
 import kotlin.math.cos
 import kotlin.math.sin
@@ -181,7 +180,7 @@ class InferenceService : Service() {
             if (gk != null && gk.isInitialized) {
                 gameKnowledge = gk
                 val oldPK = gameKnowledge.toPixelCoords(displayWidth, displayHeight)
-                val gs = gameStateDetector?.detect(bitmap, displayWidth, displayHeight, null) ?: return
+                val gs = gameStateDetector?.detect(bitmap, displayWidth, displayHeight) ?: return
                 pixelKnowledge = oldPK.copy(
                     levelUpX = gs.levelUpButtonX, levelUpY = gs.levelUpButtonY,
                     shopRecommendX = gs.shopRecommendX, shopRecommendY = gs.shopRecommendY,

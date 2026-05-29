@@ -10,7 +10,6 @@ import android.os.IBinder
 import android.provider.Settings
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import com.mlbb.trainer.R
 import com.mlbb.trainer.database.AppDatabase
 import com.mlbb.trainer.database.Hero
 import com.mlbb.trainer.inference.InferenceService

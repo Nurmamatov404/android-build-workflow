@@ -5,7 +5,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.hardware.display.DisplayManager
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager

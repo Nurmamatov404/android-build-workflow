@@ -113,7 +113,7 @@ jobs:
         with:
           name: android-apk-${{ steps.build.outputs.build_type }}
           path: |
-            **/build/outputs/apk/**/*.apkt
+            **/build/outputs/apk/**/*.apk
             **/build/outputs/apk/**/*.apk
           if-no-files-found: ignore
           retention-days: 14

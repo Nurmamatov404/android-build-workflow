@@ -25,7 +25,7 @@ class GameStateDetector {
     private var lastLevel = 1
     private var darkFrameCount = 0
 
-    fun detect(bitmap: Bitmap, displayW: Int, displayH: Int, pixelKnowledge: PixelKnowledge): GameState {
+    fun detect(bitmap: Bitmap, displayW: Int, displayH: Int, pixelKnowledge: PixelKnowledge? = null): GameState {
         if (bitmap.width == 0 || bitmap.height == 0) return GameState()
         val w = bitmap.width; val h = bitmap.height
         val pixels = IntArray(w * h)
@@ -167,7 +167,7 @@ class GameStateDetector {
             if (bottomY >= h || x >= w) continue
             val p = pixels[bottomY * w + x]
             val r = Color.red(p); val g = Color.green(p)
-            if (r > 200 && g > 100) return (cx * 2 * w / dw) to (bottomY * 2 * h / dh)
+            if (r > 200 && g > 100) return cx to bottomY
         }
         return -1 to -1
     }
