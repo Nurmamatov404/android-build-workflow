@@ -22,6 +22,7 @@
 | `01c7f7c` | fix GestureDescription for API 34: use top-level class | failure |
 | `89bd154` | fix: resolve compilation errors for API 34 build | success |
 | `04a834f` | translate app UI to Uzbek language | success |
+| `22bfd04` | add YouTube training pipeline (train.yml + train.py) | - |
 
 ## Tuzatilgan xatolar
 
