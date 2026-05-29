@@ -40,7 +40,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="O\'qitilgan Modelni Import qilish (.tflite)"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/openOverlayButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Qoplamada ochish"
             android:textSize="13sp"
+            android:layout_marginTop="4dp"
             android:layout_marginBottom="12dp" />
 
         <View

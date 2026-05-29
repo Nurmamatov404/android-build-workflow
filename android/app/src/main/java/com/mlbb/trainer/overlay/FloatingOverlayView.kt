@@ -34,6 +34,7 @@ class FloatingOverlayView(
     private val expandedHeight = 520
 
     private var cachedHeroes: List<Hero> = emptyList()
+    private var preselectedHeroId: Long = -1
 
     private lateinit var selectedHeroText: TextView
     private lateinit var statusText: TextView
@@ -288,12 +289,35 @@ class FloatingOverlayView(
         cachedHeroes = heroes
         if (::heroListContainer.isInitialized) {
             heroListContainer.removeAllViews()
+            var preselected = false
             for (hero in heroes) {
                 val row = createHeroRow(hero)
                 heroListContainer.addView(row)
+                if (hero.id == preselectedHeroId) {
+                    // Auto-select this hero
+                    selectedHeroId = hero.id
+                    selectedHeroName = hero.name
+                    selectedHeroText.text = "Qahramon: ${hero.name}"
+                    callback.onHeroSelected(hero.id, hero.name)
+                    row.setBackgroundColor(0x55FFD700.toInt())
+                    preselected = true
+                }
+            }
+            if (!preselected && heroes.isNotEmpty()) {
+                // Fallback: birinchi hero ni tanla
+                val first = heroes[0]
+                selectedHeroId = first.id
+                selectedHeroName = first.name
+                selectedHeroText.text = "Qahramon: ${first.name}"
+                callback.onHeroSelected(first.id, first.name)
+                heroListContainer.getChildAt(0)?.setBackgroundColor(0x55FFD700.toInt())
             }
         }
         heroInfoText?.text = "Qahramonlar: ${heroes.size} ta mavjud"
+    }
+
+    fun preselectHero(heroId: Long) {
+        preselectedHeroId = heroId
     }
 
     private fun createHeroRow(hero: Hero): View {

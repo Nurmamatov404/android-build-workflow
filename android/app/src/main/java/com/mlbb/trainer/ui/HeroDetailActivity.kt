@@ -2,7 +2,10 @@ package com.mlbb.trainer.ui
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.provider.Settings
 import android.view.LayoutInflater
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
@@ -16,6 +19,7 @@ import com.mlbb.trainer.R
 import com.mlbb.trainer.database.AppDatabase
 import com.mlbb.trainer.database.Hero
 import com.mlbb.trainer.database.YouTubeVideo
+import com.mlbb.trainer.overlay.GameOverlayService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,6 +59,7 @@ class HeroDetailActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.addVideoButton).setOnClickListener { showAddVideoDialog() }
         findViewById<Button>(R.id.importModelButton).setOnClickListener { importModel() }
+        findViewById<Button>(R.id.openOverlayButton).setOnClickListener { openOverlay() }
 
         val videoList = findViewById<RecyclerView>(R.id.videoListView)
         videoList.layoutManager = LinearLayoutManager(this)
@@ -188,6 +193,30 @@ class HeroDetailActivity : AppCompatActivity() {
     private fun extractTitle(url: String): String {
         val match = Regex("(?:v=|/)([a-zA-Z0-9_-]{11})").find(url)
         return match?.groupValues?.getOrNull(1) ?: url.takeLast(20)
+    }
+
+    private fun openOverlay() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+            !Settings.canDrawOverlays(this)
+        ) {
+            Toast.makeText(this, "Qoplama ruxsati talab qilinadi!", Toast.LENGTH_LONG).show()
+            startActivity(Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            ))
+            return
+        }
+        val intent = Intent(this, GameOverlayService::class.java).apply {
+            action = GameOverlayService.ACTION_SHOW
+            putExtra("preselect_hero_id", heroId)
+            putExtra("preselect_hero_name", heroName)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+        Toast.makeText(this, "Qoplama ochildi: $heroName", Toast.LENGTH_SHORT).show()
     }
 }
 
