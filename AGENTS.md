@@ -95,4 +95,12 @@
 
 ### Eksport
 - `.tflite` fayl artifact sifatida yuklanadi
-- Telefonda: Qahramon tafsilotlari → **Import Trained Model (.tflite)`
+- Telefonda: Qahramon tafsilotlari → **Import Trained Model (.tflite)**
+
+### Tuzatilgan muammolar (`f35785e`)
+| Xatolik | Sabab | Fix |
+|---------|-------|-----|
+| yt-dlp `CalledProcessError` | Eski versiya (2024.3.10), YouTube blokirovkasi | Version pin olib tashlandi, `yt_dlp` library ishlatildi, 4 xil extractor strategiya |
+| `IndentationError` | `download_videos` loop tashqarisidagi kod | `for` loop indentatsiyasi tuzatildi |
+| BGR/RGB mos kelmasligi | OpenCV BGR, model RGB kutadi | `cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)` qo'shildi |
+| pinned numpy | TensorFlow bilan versiya mos kelmasligi | Version pin olib tashlandi |
