@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.gpu.GpuDelegate
 import java.io.File
 import java.io.FileInputStream
 import java.nio.ByteBuffer
@@ -24,7 +23,6 @@ class TFLiteModel(
     }
 
     private var interpreter: Interpreter? = null
-    private var gpuDelegate: GpuDelegate? = null
     private var isLoaded = false
 
     // Mean and std for ImageNet normalization
@@ -55,14 +53,6 @@ class TFLiteModel(
 
             val options = Interpreter.Options().apply {
                 setNumThreads(4)
-                if (useGpu) {
-                    try {
-                        gpuDelegate = GpuDelegate()
-                        addDelegate(gpuDelegate)
-                    } catch (e: Exception) {
-                        Log.w(TAG, "GPU delegate not available, using CPU")
-                    }
-                }
             }
 
             val buffer = loadModelFile(modelPath)
@@ -145,7 +135,6 @@ class TFLiteModel(
     fun close() {
         try {
             interpreter?.close()
-            gpuDelegate?.close()
         } catch (e: Exception) {}
         isLoaded = false
     }
