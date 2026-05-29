@@ -33,6 +33,8 @@ class FloatingOverlayView(
     private val expandedWidth = 360
     private val expandedHeight = 520
 
+    private var cachedHeroes: List<Hero> = emptyList()
+
     private lateinit var selectedHeroText: TextView
     private lateinit var statusText: TextView
     private lateinit var heroListContainer: LinearLayout
@@ -161,6 +163,10 @@ class FloatingOverlayView(
         scrollView.addView(heroListContainer)
         container.addView(scrollView)
 
+        if (cachedHeroes.isNotEmpty()) {
+            updateHeroList(cachedHeroes)
+        }
+
         container.addView(View(context).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 1
@@ -257,10 +263,13 @@ class FloatingOverlayView(
     fun setStatusStopped() { statusText.text = "Holat: To'xtatildi" }
 
     fun updateHeroList(heroes: List<Hero>) {
-        heroListContainer.removeAllViews()
-        for (hero in heroes) {
-            val row = createHeroRow(hero)
-            heroListContainer.addView(row)
+        cachedHeroes = heroes
+        if (::heroListContainer.isInitialized) {
+            heroListContainer.removeAllViews()
+            for (hero in heroes) {
+                val row = createHeroRow(hero)
+                heroListContainer.addView(row)
+            }
         }
         heroInfoText?.text = "Qahramonlar: ${heroes.size} ta mavjud"
     }
