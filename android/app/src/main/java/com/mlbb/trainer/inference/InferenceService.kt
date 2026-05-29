@@ -229,9 +229,10 @@ class InferenceService : Service() {
             burstTimer++
             if (burstTimer > 30) {
                 burstTimer = 0
-                apmMode = when (Random.nextFloat()) {
-                    < 0.15f -> ApmMode.LAZY
-                    < 0.65f -> ApmMode.NORMAL
+                val r = Random.nextFloat()
+                apmMode = when {
+                    r < 0.15f -> ApmMode.LAZY
+                    r < 0.65f -> ApmMode.NORMAL
                     else -> ApmMode.INTENSE
                 }
                 if (pk != null && pk.inBattle) apmMode = ApmMode.INTENSE
