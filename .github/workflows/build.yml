@@ -16,10 +16,17 @@ on:
           - debug
           - release
 
+env:
+  ANDROID_DIR: android
+
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
+    defaults:
+      run:
+        working-directory: ${{ env.ANDROID_DIR }}
 
     steps:
       - name: Checkout repository
@@ -47,7 +54,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
@@ -90,7 +97,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-error-log
-          path: build-reports/
+          path: ${{ env.ANDROID_DIR }}/build-reports/
           retention-days: 7
 
       - name: Find APK files
@@ -112,9 +119,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-apk-${{ steps.build.outputs.build_type }}
-          path: |
-            **/build/outputs/apk/**/*.apk
-            **/build/outputs/apk/**/*.apk
+          path: ${{ env.ANDROID_DIR }}/**/build/outputs/apk/**/*.apk
           if-no-files-found: ignore
           retention-days: 14
 
@@ -122,7 +127,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-report
-          path: build-reports/
+          path: ${{ env.ANDROID_DIR }}/build-reports/
           retention-days: 7
 
       - name: Fail workflow if build failed
