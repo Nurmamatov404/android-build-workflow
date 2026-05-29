@@ -43,7 +43,15 @@ class GameOverlayService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_SHOW -> showOverlay()
+            ACTION_SHOW -> {
+                val preselectId = intent.getLongExtra("preselect_hero_id", -1)
+                val preselectName = intent.getStringExtra("preselect_hero_name") ?: ""
+                if (preselectId > 0) {
+                    currentHeroId = preselectId
+                    currentHeroName = preselectName
+                }
+                showOverlay()
+            }
             ACTION_HIDE -> hideOverlay()
         }
         return START_STICKY
@@ -107,25 +115,12 @@ class GameOverlayService : Service() {
         overlayView?.show()
         isOverlayShowing = true
 
-        // Agar HeroDetailActivity dan kelgan bo'lsa, shu heroni tanlash
-        val preselectId = intent?.getLongExtra("preselect_hero_id", -1) ?: -1
-        val preselectName = intent?.getStringExtra("preselect_hero_name") ?: ""
-        if (preselectId > 0 && preselectName.isNotEmpty()) {
-            currentHeroId = preselectId
-            currentHeroName = preselectName
-            overlayView?.preselectHero(preselectId)
+        if (currentHeroId > 0) {
+            overlayView?.preselectHero(currentHeroId)
         }
 
         startHeroListPolling()
         startAiStatusPolling()
-
-        // Agar HeroDetailActivity dan kelgan bo'lsa, shu heroni tanlash
-        val preselectId = intent?.getLongExtra("preselect_hero_id", -1) ?: -1
-        val preselectName = intent?.getStringExtra("preselect_hero_name") ?: ""
-        if (preselectId > 0 && preselectName.isNotEmpty()) {
-            currentHeroId = preselectId
-            currentHeroName = preselectName
-        }
     }
 
     private fun hideOverlay() {
