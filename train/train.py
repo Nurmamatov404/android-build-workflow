@@ -115,13 +115,11 @@ def _download_drive(url, out_dir):
         file_id = url.split("id=")[1].split("&")[0]
 
     if file_id:
-        download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
         output = os.path.join(out_dir, f"drive_{file_id}.mp4")
+        gdown.download(id=file_id, output=output, quiet=False)
     else:
         output = os.path.join(out_dir, "drive_video.mp4")
-        download_url = url
-
-    gdown.download(download_url, output, quiet=False)
+        gdown.download(url, output=output, quiet=False)
     if not os.path.exists(output):
         raise RuntimeError(f"Google Drive dan yuklab olinmadi: {url}")
     return output
