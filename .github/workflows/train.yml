@@ -1,0 +1,66 @@
+name: Train AI Model from YouTube
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: 'YouTube video URL lari (vergul bilan ajrating)'
+        required: true
+        type: string
+        default: 'https://youtube.com/...'
+      epochs:
+        description: 'O\'qitish epochlari soni'
+        required: false
+        type: number
+        default: 20
+      hero_name:
+        description: 'Qahramon nomi (fayl nomiga qo\'shiladi)'
+        required: false
+        type: string
+        default: 'custom'
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r train/requirements.txt
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Download & verify yt-dlp
+        run: yt-dlp --version
+
+      - name: Run training
+        run: |
+          mkdir -p output
+          python train/train.py \
+            --urls "${{ github.event.inputs.urls }}" \
+            --output "output/model_${{ github.event.inputs.hero_name }}.tflite" \
+            --epochs ${{ github.event.inputs.epochs }}
+
+      - name: Upload trained model
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-model-${{ github.event.inputs.hero_name }}
+          path: output/*.tflite
+          if-no-files-found: error
+
+      - name: Upload training logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-logs
+          path: output/*.log
+          if-no-files-found: ignore
