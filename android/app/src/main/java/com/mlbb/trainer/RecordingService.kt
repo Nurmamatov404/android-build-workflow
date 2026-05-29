@@ -28,6 +28,9 @@ class RecordingService : Service() {
         const val NOTIFICATION_ID = 1001
         const val CHANNEL_ID = "mlbb_recording"
 
+        var lastProjectionResultCode: Int = -1
+        var lastProjectionData: Intent? = null
+
         var isRecording = false
             private set
 

@@ -20,6 +20,7 @@ import android.util.DisplayMetrics
 import android.util.Log
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
+import com.mlbb.trainer.RecordingService
 import com.mlbb.trainer.overlay.GameOverlayService
 import kotlin.math.cos
 import kotlin.math.sin
@@ -66,7 +67,7 @@ class InferenceService : Service() {
 
     private var gameKnowledge = GameKnowledge(isInitialized = false)
     private var pixelKnowledge: PixelKnowledge? = null
-    private var displayWidth = 0; private var displayHeight = 0
+    private var displayWidth = 0; private var displayHeight = 0; private var displayDensity = 0
     private var actionCount = 0; private var gamePhase = GamePhase.STARTING
     private var apmMode = ApmMode.NORMAL; private var burstTimer = 0
     private var lastHeroAngle = 0f
@@ -134,23 +135,13 @@ class InferenceService : Service() {
         val display = wm.defaultDisplay
         val metrics = DisplayMetrics()
         display.getRealMetrics(metrics)
-        displayWidth = metrics.widthPixels; displayHeight = metrics.heightPixels
+        displayWidth = metrics.widthPixels; displayHeight = metrics.heightPixels; displayDensity = metrics.densityDpi
 
         if (resultCode != -1 && data != null) {
-            val mpm = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-            mediaProjection = mpm.getMediaProjection(resultCode, data)
-
-            imageReader = ImageReader.newInstance(displayWidth, displayHeight, PixelFormat.RGBA_8888, 4)
-            virtualDisplay = mediaProjection?.createVirtualDisplay(
-                "MLBB-AI-${heroName}", displayWidth, displayHeight, metrics.densityDpi,
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, imageReader?.surface, null, null
-            )
-            imageReader?.setOnImageAvailableListener({ reader ->
-                val image = reader.acquireLatestImage() ?: return@setOnImageAvailableListener
-                val bitmap = imageToBitmap(image)
-                image.close()
-                if (bitmap != null) onFrame(bitmap)
-            }, null)
+            setupMediaProjection(resultCode, data)
+        } else if (RecordingService.lastProjectionResultCode != -1 && RecordingService.lastProjectionData != null) {
+            Log.i(TAG, "Using stored MediaProjection from RecordingService")
+            setupMediaProjection(RecordingService.lastProjectionResultCode, RecordingService.lastProjectionData!!)
         }
 
         inferenceThread = HandlerThread("InferenceThread").apply { start() }
@@ -168,6 +159,23 @@ class InferenceService : Service() {
         }, 3000)
 
         Log.i(TAG, "AI inference starting for $heroName")
+    }
+
+    private fun setupMediaProjection(resultCode: Int, data: Intent) {
+        val mpm = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        mediaProjection = mpm.getMediaProjection(resultCode, data)
+
+        imageReader = ImageReader.newInstance(displayWidth, displayHeight, PixelFormat.RGBA_8888, 4)
+        virtualDisplay = mediaProjection?.createVirtualDisplay(
+            "MLBB-AI-${heroName}", displayWidth, displayHeight, displayDensity,
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, imageReader?.surface, null, null
+        )
+        imageReader?.setOnImageAvailableListener({ reader ->
+            val image = reader.acquireLatestImage() ?: return@setOnImageAvailableListener
+            val bitmap = imageToBitmap(image)
+            image.close()
+            if (bitmap != null) onFrame(bitmap)
+        }, null)
     }
 
     private fun onFrame(bitmap: Bitmap) {

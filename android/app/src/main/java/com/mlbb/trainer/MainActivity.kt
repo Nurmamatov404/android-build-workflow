@@ -36,6 +36,8 @@ class MainActivity : AppCompatActivity() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK && result.data != null) {
+            RecordingService.lastProjectionResultCode = result.resultCode
+            RecordingService.lastProjectionData = result.data
             startRecordingService(result.resultCode, result.data!!)
         } else {
             Toast.makeText(this, "Ekranni yozib olishga ruxsat berilmadi", Toast.LENGTH_SHORT).show()
