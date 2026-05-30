@@ -39,7 +39,10 @@ class InferenceService : Service() {
         var currentApmMode = "NORMAL"; private set
         var currentLevel = 1; private set
         var currentPhase = "PLAYING"; private set
+        var displayFrameCallback: ((Bitmap) -> Unit)? = null
     }
+
+    private var displayFrameCounter = 0
 
     private var mediaProjection: MediaProjection? = null
     private var imageReader: ImageReader? = null
@@ -263,6 +266,17 @@ class InferenceService : Service() {
         }
 
         runModelOnFrame(bitmap)
+
+        displayFrameCounter++
+        if (displayFrameCounter % 3 == 0) {
+            displayFrameCallback?.let { cb ->
+                val scale = 3
+                val sw = displayWidth / scale
+                val sh = displayHeight / scale
+                val scaled = Bitmap.createScaledBitmap(bitmap, sw, sh, true)
+                cb(scaled)
+            }
+        }
     }
 
     private fun runModelOnFrame(bitmap: Bitmap) {
@@ -765,6 +779,7 @@ class InferenceService : Service() {
         mediaProjection?.stop()
         isRunning = false
         GameOverlayService.isAiRunning = false
+        displayFrameCallback = null
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
         Log.i(TAG, "AI stopped for $heroName")

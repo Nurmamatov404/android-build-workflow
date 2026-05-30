@@ -57,6 +57,11 @@
             android:exported="false" />
 
         <service
+            android:name=".overlay.GameWindowService"
+            android:foregroundServiceType="specialUse"
+            android:exported="false" />
+
+        <service
             android:name=".TouchEventService"
             android:exported="true"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">

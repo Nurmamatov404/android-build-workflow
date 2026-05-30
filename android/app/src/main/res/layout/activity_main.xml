@@ -70,8 +70,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Qoplamani ko\'rsatish"
-                android:textSize="12sp"
-                android:layout_marginEnd="4dp" />
+                android:textSize="11sp"
+                android:layout_marginEnd="3dp" />
 
             <Button
                 android:id="@+id/overlayPermissionButton"
@@ -79,8 +79,18 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Qoplama ruxsati"
-                android:textSize="12sp"
-                android:layout_marginStart="4dp" />
+                android:textSize="11sp"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp" />
+
+            <Button
+                android:id="@+id/gameWindowButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="O\'yin oynasi"
+                android:textSize="11sp"
+                android:layout_marginStart="3dp" />
         </LinearLayout>
 
         <TextView

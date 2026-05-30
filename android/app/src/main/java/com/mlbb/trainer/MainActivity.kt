@@ -22,6 +22,7 @@ import android.view.LayoutInflater
 import com.mlbb.trainer.database.Hero
 import com.mlbb.trainer.inference.InferenceService
 import com.mlbb.trainer.overlay.GameOverlayService
+import com.mlbb.trainer.overlay.GameWindowService
 import com.mlbb.trainer.ui.HeroDetailActivity
 import kotlinx.coroutines.launch
 
@@ -32,6 +33,7 @@ class MainActivity : AppCompatActivity() {
         const val EXTRA_HERO_ID = "hero_id"
         const val EXTRA_HERO_NAME = "hero_name"
         const val EXTRA_MODEL_PATH = "model_path"
+        const val EXTRA_START_AI = "start_ai"
     }
 
     private lateinit var database: AppDatabase
@@ -43,6 +45,7 @@ class MainActivity : AppCompatActivity() {
     private var pendingAiHeroId: Long = -1
     private var pendingAiHeroName: String = ""
     private var pendingAiModelPath: String = ""
+    private var pendingStartAi = false
 
     private val mediaProjectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -50,15 +53,16 @@ class MainActivity : AppCompatActivity() {
         if (result.resultCode == RESULT_OK && result.data != null) {
             RecordingService.lastProjectionResultCode = result.resultCode
             RecordingService.lastProjectionData = result.data
-            if (pendingAiHeroId > 0) {
+            if (pendingAiHeroId > 0 || pendingStartAi) {
+                if (pendingAiHeroId <= 0) pendingAiHeroId = 1L
                 startInferenceService(pendingAiHeroId, pendingAiHeroName, pendingAiModelPath)
-                pendingAiHeroId = -1
+                pendingAiHeroId = -1; pendingStartAi = false
             } else {
                 startRecordingService(result.resultCode, result.data!!)
             }
         } else {
             Toast.makeText(this, "Ekranni yozib olishga ruxsat berilmadi", Toast.LENGTH_SHORT).show()
-            pendingAiHeroId = -1
+            pendingAiHeroId = -1; pendingStartAi = false
         }
     }
 
@@ -102,6 +106,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.startRecordingButton).setOnClickListener { checkAndStartRecording() }
         findViewById<Button>(R.id.showOverlayButton).setOnClickListener { showOverlay() }
         findViewById<Button>(R.id.overlayPermissionButton).setOnClickListener { requestOverlayPermission() }
+        findViewById<Button>(R.id.gameWindowButton).setOnClickListener { showGameWindow() }
         findViewById<Button>(R.id.settingsButton).setOnClickListener { openSettings() }
 
         updateOverlayStatus()
@@ -112,6 +117,7 @@ class MainActivity : AppCompatActivity() {
         updateOverlayStatus()
         statusText.text = when {
             GameOverlayService.isAiRunning -> "Holat: AI Ishlamoqda"
+            GameWindowService.isShowing -> "Holat: Oyin oynasi faol"
             RecordingService.isRecording -> "Holat: Yozilmoqda..."
             else -> "Holat: Bo'sh"
         }
@@ -196,6 +202,18 @@ class MainActivity : AppCompatActivity() {
         updateOverlayStatus()
     }
 
+    private fun showGameWindow() {
+        val intent = Intent(this, GameWindowService::class.java).apply {
+            action = GameWindowService.ACTION_SHOW
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+        statusText.text = "Holat: Oyin oynasi faol"
+    }
+
     private fun openSettings() {
         startActivity(Intent(this, com.mlbb.trainer.ui.SettingsActivity::class.java))
     }
@@ -227,6 +245,7 @@ class MainActivity : AppCompatActivity() {
             pendingAiHeroId = intent.getLongExtra(EXTRA_HERO_ID, -1)
             pendingAiHeroName = intent.getStringExtra(EXTRA_HERO_NAME) ?: ""
             pendingAiModelPath = intent.getStringExtra(EXTRA_MODEL_PATH) ?: ""
+            pendingStartAi = intent.getBooleanExtra(EXTRA_START_AI, false)
 
             val mpm = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
             mediaProjectionLauncher.launch(mpm.createScreenCaptureIntent())
