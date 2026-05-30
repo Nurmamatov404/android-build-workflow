@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.RectF
 import android.util.Log
 import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.sqrt
 
 class ScreenAnalyzer {
