@@ -23,21 +23,12 @@ class HeroComboProvider {
 
     fun loadLearnedCombos(context: android.content.Context, modelPath: String) {
         val comboJsonPath = modelPath.replace(".tflite", "_combos.json")
-            .replace("mlbb_model", "learned_combos")
         val comboFile = java.io.File(comboJsonPath)
         if (comboFile.exists()) {
             learnedProvider.loadFromFile(context, comboJsonPath)
             learnedCombos = learnedProvider.getCombos()
             learnedPriority = learnedProvider.getLevelUpPriority()
             android.util.Log.i("HeroCombo", "Loaded ${learnedCombos.size} learned combos")
-        }
-        val altPath = java.io.File(modelPath).parent + "/learned_combos.json"
-        val altFile = java.io.File(altPath)
-        if (!comboFile.exists() && altFile.exists()) {
-            learnedProvider.loadFromFile(context, altPath)
-            learnedCombos = learnedProvider.getCombos()
-            learnedPriority = learnedProvider.getLevelUpPriority()
-            android.util.Log.i("HeroCombo", "Loaded ${learnedCombos.size} learned combos (alt)")
         }
     }
 

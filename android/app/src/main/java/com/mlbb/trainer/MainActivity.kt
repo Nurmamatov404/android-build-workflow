@@ -242,6 +242,9 @@ class MainActivity : AppCompatActivity() {
             putExtra(InferenceService.EXTRA_RESULT_CODE, RecordingService.lastProjectionResultCode)
             putExtra(InferenceService.EXTRA_DATA, RecordingService.lastProjectionData)
         }
+        // Token'ni tozalaymiz — keyingi safar yangi so'ralsin
+        RecordingService.lastProjectionResultCode = -1
+        RecordingService.lastProjectionData = null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(intent)
         } else {

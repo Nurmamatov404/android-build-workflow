@@ -185,37 +185,26 @@ class GameOverlayService : Service() {
             return
         }
 
-        // MediaProjection ruxsati yo'q — MainActivity orqali so'raymiz
-        if (RecordingService.lastProjectionResultCode == -1 || RecordingService.lastProjectionData == null) {
-            val reqIntent = Intent(this, MainActivity::class.java).apply {
-                action = MainActivity.ACTION_REQUEST_PROJECTION
-                putExtra(MainActivity.EXTRA_HERO_ID, currentHeroId)
-                putExtra(MainActivity.EXTRA_HERO_NAME, currentHeroName)
-                putExtra(MainActivity.EXTRA_MODEL_PATH, currentModelPath)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        // Recording faol bo'lsa — to'xtatamiz (bitta MediaProjection token faqat bitta VirtualDisplay)
+        if (RecordingService.isRecording) {
+            val stopIntent = Intent(this, RecordingService::class.java).apply {
+                action = RecordingService.ACTION_STOP
             }
-            startActivity(reqIntent)
-            Toast.makeText(this, "Ekranni yozib olish ruxsatini bering", Toast.LENGTH_LONG).show()
-            return
+            startService(stopIntent)
+            RecordingService.lastProjectionResultCode = -1
+            RecordingService.lastProjectionData = null
         }
 
-        val intent = Intent(this, InferenceService::class.java).apply {
-            action = InferenceService.ACTION_START
-            putExtra(InferenceService.EXTRA_HERO_ID, currentHeroId)
-            putExtra(InferenceService.EXTRA_HERO_NAME, currentHeroName)
-            putExtra(InferenceService.EXTRA_MODEL_PATH, currentModelPath)
-            putExtra(InferenceService.EXTRA_RESULT_CODE, RecordingService.lastProjectionResultCode)
-            putExtra(InferenceService.EXTRA_DATA, RecordingService.lastProjectionData)
+        // Hardoim yangi MediaProjection token so'raymiz — eski token ishlamaydi
+        val reqIntent = Intent(this, MainActivity::class.java).apply {
+            action = MainActivity.ACTION_REQUEST_PROJECTION
+            putExtra(MainActivity.EXTRA_HERO_ID, currentHeroId)
+            putExtra(MainActivity.EXTRA_HERO_NAME, currentHeroName)
+            putExtra(MainActivity.EXTRA_MODEL_PATH, currentModelPath)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent)
-        } else {
-            startService(intent)
-        }
-
-        isAiRunning = true
-        overlayView?.setRecordingStatus(true)
-        Toast.makeText(this, "$currentHeroName uchun AI ishga tushirildi", Toast.LENGTH_SHORT).show()
+        startActivity(reqIntent)
+        Toast.makeText(this, "Ekranni yozib olish ruxsatini bering", Toast.LENGTH_LONG).show()
     }
 
     private fun stopAiMode() {

@@ -33,13 +33,25 @@ class HeroDetailActivity : AppCompatActivity() {
     private lateinit var videoAdapter: VideoAdapter
     private lateinit var modelStatusText: TextView
     private lateinit var modelFileNameText: TextView
+    private lateinit var yoloStatusText: TextView
+    private lateinit var combosStatusText: TextView
 
     private val modelFileLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        if (uri != null) {
-            importModelFile(uri)
-        }
+        if (uri != null) importModelFile(uri, "action")
+    }
+
+    private val yoloFileLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) importModelFile(uri, "yolo")
+    }
+
+    private val combosFileLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) importModelFile(uri, "combos")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,9 +67,13 @@ class HeroDetailActivity : AppCompatActivity() {
 
         modelStatusText = findViewById(R.id.modelStatusText)
         modelFileNameText = findViewById(R.id.modelFileNameText)
+        yoloStatusText = findViewById(R.id.yoloStatusText)
+        combosStatusText = findViewById(R.id.combosStatusText)
 
         findViewById<Button>(R.id.addVideoButton).setOnClickListener { showAddVideoDialog() }
         findViewById<Button>(R.id.importModelButton).setOnClickListener { importModel() }
+        findViewById<Button>(R.id.importYoloButton).setOnClickListener { importYolo() }
+        findViewById<Button>(R.id.importCombosButton).setOnClickListener { importCombos() }
         findViewById<Button>(R.id.openOverlayButton).setOnClickListener { openOverlay() }
 
         val videoList = findViewById<RecyclerView>(R.id.videoListView)
@@ -82,6 +98,10 @@ class HeroDetailActivity : AppCompatActivity() {
     }
 
     private fun updateModelUI(hero: Hero) {
+        val heroDir = File(getExternalFilesDir(null), "MLBB_AI")
+        val yoloFile = File(heroDir, "model_${heroId}_yolo.tflite")
+        val combosFile = File(heroDir, "model_${heroId}_combos.json")
+
         when (hero.modelStatus) {
             "none" -> {
                 modelStatusText.text = "Model: Import qilinmagan"
@@ -97,19 +117,36 @@ class HeroDetailActivity : AppCompatActivity() {
                 modelFileNameText.text = hero.modelPath
             }
         }
+
+        yoloStatusText.text = if (yoloFile.exists()) "YOLO: Tayyor ✓" else "YOLO: Yo'q"
+        combosStatusText.text = if (combosFile.exists()) "Combos: Tayyor ✓" else "Combos: Yo'q"
     }
 
     private fun importModel() {
         modelFileLauncher.launch("application/octet-stream")
     }
 
-    private fun importModelFile(uri: Uri) {
+    private fun importYolo() {
+        yoloFileLauncher.launch("application/octet-stream")
+    }
+
+    private fun importCombos() {
+        combosFileLauncher.launch("application/json")
+    }
+
+    private fun importModelFile(uri: Uri, type: String) {
         lifecycleScope.launch {
             try {
-                modelStatusText.text = "Model: Import qilinmoqda..."
                 val heroDir = File(getExternalFilesDir(null), "MLBB_AI")
                 heroDir.mkdirs()
-                val targetFile = File(heroDir, "model_${heroId}.tflite")
+
+                val fileName = when (type) {
+                    "action" -> "model_${heroId}.tflite"
+                    "yolo" -> "model_${heroId}_yolo.tflite"
+                    "combos" -> "model_${heroId}_combos.json"
+                    else -> return@launch
+                }
+                val targetFile = File(heroDir, fileName)
 
                 withContext(Dispatchers.IO) {
                     contentResolver.openInputStream(uri)?.use { input ->
@@ -119,25 +156,32 @@ class HeroDetailActivity : AppCompatActivity() {
                     }
                 }
 
-                val hero = database.heroDao().getHeroById(heroId)
-                if (hero != null) {
-                    database.heroDao().update(
-                        hero.copy(
-                            modelPath = targetFile.absolutePath,
-                            modelStatus = "ready"
+                if (type == "action") {
+                    val hero = database.heroDao().getHeroById(heroId)
+                    if (hero != null) {
+                        database.heroDao().update(
+                            hero.copy(
+                                modelPath = targetFile.absolutePath,
+                                modelStatus = "ready"
+                            )
                         )
-                    )
+                    }
                 }
 
                 loadHeroInfo()
+                val label = when (type) {
+                    "action" -> "Model"; "yolo" -> "YOLO"; else -> "Combos"
+                }
                 Toast.makeText(this@HeroDetailActivity,
-                    "Model muvaffaqiyatli import qilindi!", Toast.LENGTH_SHORT).show()
+                    "$label muvaffaqiyatli import qilindi!", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                val hero = database.heroDao().getHeroById(heroId)
-                if (hero != null) {
-                    database.heroDao().update(
-                        hero.copy(modelStatus = "error", modelPath = "Error: ${e.message}")
-                    )
+                if (type == "action") {
+                    val hero = database.heroDao().getHeroById(heroId)
+                    if (hero != null) {
+                        database.heroDao().update(
+                            hero.copy(modelStatus = "error", modelPath = "Error: ${e.message}")
+                        )
+                    }
                 }
                 loadHeroInfo()
                 Toast.makeText(this@HeroDetailActivity,

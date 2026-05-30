@@ -149,8 +149,8 @@ class YOLODetector(
 
             val absCx = ((sigmoid(cx) + gridX) / gridSize) * imageW
             val absCy = ((sigmoid(cy) + gridY) / gridSize) * imageH
-            val absW = (exp(bw) * inputSize / 32f) / imageW * imageW
-            val absH = (exp(bh) * inputSize / 32f) / imageH * imageH
+            val absW = exp(bw) * (imageW / gridSize)
+            val absH = exp(bh) * (imageH / gridSize)
 
             val left = (absCx - absW / 2).coerceAtLeast(0f)
             val top = (absCy - absH / 2).coerceAtLeast(0f)

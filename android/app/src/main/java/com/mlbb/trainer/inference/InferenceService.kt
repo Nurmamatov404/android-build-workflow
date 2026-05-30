@@ -19,7 +19,6 @@ import android.util.DisplayMetrics
 import android.util.Log
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
-import com.mlbb.trainer.RecordingService
 import com.mlbb.trainer.overlay.GameOverlayService
 import java.io.File
 import kotlin.random.Random
@@ -164,19 +163,13 @@ class InferenceService : Service() {
         inferenceThread = HandlerThread("InferenceThread").apply { start() }
         inferenceHandler = Handler(inferenceThread!!.looper)
 
-        if (resultCode != -1 && data != null) {
-            setupMediaProjection(resultCode, data)
-        } else if (RecordingService.lastProjectionResultCode != -1 && RecordingService.lastProjectionData != null) {
-            Log.i(TAG, "Using stored MediaProjection from RecordingService")
-            setupMediaProjection(RecordingService.lastProjectionResultCode, RecordingService.lastProjectionData!!)
-        }
-
-        if (imageReader == null) {
-            Log.e(TAG, "FATAL: MediaProjection o'rnatilmadi! Ekran yozib olish ruxsati kerak.")
+        if (resultCode == -1 || data == null) {
+            Log.e(TAG, "FATAL: MediaProjection token topilmadi! Ekran yozib olish ruxsati kerak.")
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return
         }
+        setupMediaProjection(resultCode, data)
 
         gamePhase = GamePhase.ANALYZING
         isRunning = true
@@ -230,7 +223,7 @@ class InferenceService : Service() {
         if (gamePhase == GamePhase.ANALYZING) { analyzeScreen(bitmap); return }
 
         reanalyzeCounter++
-        if (reanalyzeCounter >= 200 || pixelKnowledge == null) {
+        if (reanalyzeCounter >= 30 || pixelKnowledge == null) {
             reanalyzeCounter = 0
 
             val yoloUsed = useYOLO && yoloDetector != null

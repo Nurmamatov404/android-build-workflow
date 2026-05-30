@@ -42,6 +42,37 @@
             android:text="O\'qitilgan Modelni Import qilish (.tflite)"
             android:textSize="13sp" />
 
+        <TextView
+            android:id="@+id/yoloStatusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="YOLO: Yo'q"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp" />
+
+        <Button
+            android:id="@+id/importYoloButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="YOLO modelini import qilish (_yolo.tflite)"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/combosStatusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Combos: Yo'q"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp" />
+
+        <Button
+            android:id="@+id/importCombosButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Combos JSON import qilish (_combos.json)"
+            android:textSize="13sp"
+            android:layout_marginBottom="8dp" />
+
         <Button
             android:id="@+id/openOverlayButton"
             android:layout_width="match_parent"

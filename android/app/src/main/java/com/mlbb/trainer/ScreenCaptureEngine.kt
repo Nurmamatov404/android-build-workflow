@@ -117,17 +117,34 @@ class ScreenCaptureEngine(
         val pixelStride = planes[0].pixelStride
         val rowStride = planes[0].rowStride
         val rowPadding = rowStride - pixelStride * image.width
+        val w = image.width; val h = image.height
 
-        val bitmap = Bitmap.createBitmap(
-            image.width + rowPadding / pixelStride,
-            image.height, Bitmap.Config.ARGB_8888
-        )
-        bitmap.copyPixelsFromBuffer(buffer)
-        return if (rowPadding == 0) {
-            bitmap
-        } else {
-            Bitmap.createBitmap(bitmap, 0, 0, image.width, image.height)
+        buffer.rewind()
+
+        if (rowPadding == 0) {
+            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            bitmap.copyPixelsFromBuffer(buffer)
+            return bitmap
         }
+
+        val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val pixels = IntArray(w * h)
+        val rowBytes = w * pixelStride
+        val line = ByteArray(rowBytes)
+        for (y in 0 until h) {
+            buffer.position(y * rowStride)
+            buffer.get(line)
+            for (x in 0 until w) {
+                val i = x * 4
+                val a = line[i + 3].toInt() and 0xFF
+                val r = line[i].toInt() and 0xFF
+                val g = line[i + 1].toInt() and 0xFF
+                val b = line[i + 2].toInt() and 0xFF
+                pixels[y * w + x] = (a shl 24) or (r shl 16) or (g shl 8) or b
+            }
+        }
+        bitmap.setPixels(pixels, 0, w, 0, 0, w, h)
+        return bitmap
     }
 
     fun stop() {

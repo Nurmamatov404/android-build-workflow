@@ -194,7 +194,7 @@ class GameStateDetector {
             val b = (Color.red(p) + Color.green(p) + Color.blue(p)) / 3f
             if (b > bestBright) { bestBright = b; bestY = y }
         }
-        if (bestBright > 150) return scanX to (bestY * h / h)
+        if (bestBright > 150) return scanX to bestY
         return -1 to -1
     }
 

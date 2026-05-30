@@ -114,6 +114,10 @@ class RecordingService : Service() {
 
         TouchEventService.instance?.setRecorder(null)
 
+        // Token'ni tozalaymiz — eskirgan token boshqa xizmatda ishlatilmasligi uchun
+        lastProjectionResultCode = -1
+        lastProjectionData = null
+
         frameCount = screenCapture?.getFrameCount() ?: 0
         touchCount = touchRecorder?.getEventCount() ?: 0
 
