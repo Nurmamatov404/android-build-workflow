@@ -14,6 +14,8 @@ import android.util.Log
 import android.view.*
 import android.widget.*
 import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import com.mlbb.trainer.MainActivity
 import com.mlbb.trainer.RecordingService
 import com.mlbb.trainer.TouchEventService
@@ -265,38 +267,31 @@ class GameWindowService : Service() {
         isAiStartedFlag = true
         statusText?.text = "AI boshlanmoqda..."
 
-        Thread {
-            var heroId = -1L
-            var heroName = ""
-            var modelPath = ""
+        val heroInfo = runBlocking(Dispatchers.IO) {
             try {
                 val db = AppDatabase.getDatabase(this@GameWindowService)
                 val heroes = db.heroDao().getAllHeroesList()
                 val chosen = heroes.firstOrNull()
-                if (chosen != null) {
-                    heroId = chosen.id
-                    heroName = chosen.name
-                    modelPath = chosen.modelPath ?: ""
-                }
-            } catch (_: Exception) {}
-
-            val hId = heroId; val hName = heroName; val mPath = modelPath
-            handler.post {
-                RecordingService.lastProjectionResultCode = -1
-                RecordingService.lastProjectionData = null
-                val reqIntent = Intent(this@GameWindowService, MainActivity::class.java).apply {
-                    action = MainActivity.ACTION_REQUEST_PROJECTION
-                    putExtra(MainActivity.EXTRA_HERO_ID, hId)
-                    putExtra(MainActivity.EXTRA_HERO_NAME, hName)
-                    putExtra(MainActivity.EXTRA_MODEL_PATH, mPath)
-                    putExtra(MainActivity.EXTRA_START_AI, true)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                }
-                startActivity(reqIntent)
-                Toast.makeText(this@GameWindowService,
-                    "Ekranni yozib olish ruxsatini bering", Toast.LENGTH_LONG).show()
+                Triple(chosen?.id ?: -1L, chosen?.name ?: "", chosen?.modelPath ?: "")
+            } catch (_: Exception) {
+                Triple(-1L, "", "")
             }
-        }.start()
+        }
+
+        val (heroId, heroName, modelPath) = heroInfo
+        RecordingService.lastProjectionResultCode = -1
+        RecordingService.lastProjectionData = null
+        val reqIntent = Intent(this@GameWindowService, MainActivity::class.java).apply {
+            action = MainActivity.ACTION_REQUEST_PROJECTION
+            putExtra(MainActivity.EXTRA_HERO_ID, heroId)
+            putExtra(MainActivity.EXTRA_HERO_NAME, heroName)
+            putExtra(MainActivity.EXTRA_MODEL_PATH, modelPath)
+            putExtra(MainActivity.EXTRA_START_AI, true)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        }
+        startActivity(reqIntent)
+        Toast.makeText(this@GameWindowService,
+            "Ekranni yozib olish ruxsatini bering", Toast.LENGTH_LONG).show()
     }
 
     private fun stopAI() {
