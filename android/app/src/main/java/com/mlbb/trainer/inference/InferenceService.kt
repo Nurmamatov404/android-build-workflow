@@ -171,6 +171,13 @@ class InferenceService : Service() {
             setupMediaProjection(RecordingService.lastProjectionResultCode, RecordingService.lastProjectionData!!)
         }
 
+        if (imageReader == null) {
+            Log.e(TAG, "FATAL: MediaProjection o'rnatilmadi! Ekran yozib olish ruxsati kerak.")
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return
+        }
+
         gamePhase = GamePhase.ANALYZING
         isRunning = true
         actionCount = 0
@@ -194,6 +201,13 @@ class InferenceService : Service() {
             "MLBB-AI-${heroName}", displayWidth, displayHeight, displayDensity,
             DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, imageReader?.surface, null, null
         )
+        if (imageReader == null) {
+            Log.e(TAG, "imageReader yaratilmadi!")
+            return
+        }
+        if (virtualDisplay == null) {
+            Log.w(TAG, "virtualDisplay yaratilmadi!")
+        }
         imageReader?.setOnImageAvailableListener({ reader ->
             val image = reader.acquireLatestImage() ?: return@setOnImageAvailableListener
             val bitmap = imageToBitmap(image)
@@ -202,6 +216,7 @@ class InferenceService : Service() {
                 inferenceHandler?.post { onFrame(bitmap) }
             }
         }, inferenceHandler)
+        Log.i(TAG, "MediaProjection o'rnatildi: ${displayWidth}x${displayHeight} @ ${displayDensity}dpi")
     }
 
     private fun onFrame(bitmap: Bitmap) {

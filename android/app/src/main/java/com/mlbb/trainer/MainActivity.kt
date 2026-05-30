@@ -20,11 +20,19 @@ import androidx.recyclerview.widget.RecyclerView
 import com.mlbb.trainer.database.AppDatabase
 import android.view.LayoutInflater
 import com.mlbb.trainer.database.Hero
+import com.mlbb.trainer.inference.InferenceService
 import com.mlbb.trainer.overlay.GameOverlayService
 import com.mlbb.trainer.ui.HeroDetailActivity
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        const val ACTION_REQUEST_PROJECTION = "com.mlbb.trainer.REQUEST_PROJECTION"
+        const val EXTRA_HERO_ID = "hero_id"
+        const val EXTRA_HERO_NAME = "hero_name"
+        const val EXTRA_MODEL_PATH = "model_path"
+    }
 
     private lateinit var database: AppDatabase
     private lateinit var heroAdapter: HeroAdapter
@@ -32,15 +40,25 @@ class MainActivity : AppCompatActivity() {
     private lateinit var overlayStatusText: TextView
     private lateinit var instructionText: TextView
 
+    private var pendingAiHeroId: Long = -1
+    private var pendingAiHeroName: String = ""
+    private var pendingAiModelPath: String = ""
+
     private val mediaProjectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK && result.data != null) {
             RecordingService.lastProjectionResultCode = result.resultCode
             RecordingService.lastProjectionData = result.data
-            startRecordingService(result.resultCode, result.data!!)
+            if (pendingAiHeroId > 0) {
+                startInferenceService(pendingAiHeroId, pendingAiHeroName, pendingAiModelPath)
+                pendingAiHeroId = -1
+            } else {
+                startRecordingService(result.resultCode, result.data!!)
+            }
         } else {
             Toast.makeText(this, "Ekranni yozib olishga ruxsat berilmadi", Toast.LENGTH_SHORT).show()
+            pendingAiHeroId = -1
         }
     }
 
@@ -64,6 +82,8 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.statusText)
         overlayStatusText = findViewById(R.id.overlayStatusText)
         instructionText = findViewById(R.id.instructionText)
+
+        handleIntent(intent)
 
         val heroList = findViewById<RecyclerView>(R.id.heroListView)
         heroList.layoutManager = LinearLayoutManager(this)
@@ -90,16 +110,21 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateOverlayStatus()
-        if (RecordingService.isRecording) {
-            statusText.text = "Holat: Yozilmoqda..."
-        } else {
-            statusText.text = "Holat: Bo'sh"
+        statusText.text = when {
+            GameOverlayService.isAiRunning -> "Holat: AI Ishlamoqda"
+            RecordingService.isRecording -> "Holat: Yozilmoqda..."
+            else -> "Holat: Bo'sh"
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
     }
 
     private fun loadHeroes() {
@@ -195,6 +220,36 @@ class MainActivity : AppCompatActivity() {
         } else {
             "Qoplama: Faol emas (boshlash uchun Ko'rsatish-ni bosing)"
         }
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.action == ACTION_REQUEST_PROJECTION) {
+            pendingAiHeroId = intent.getLongExtra(EXTRA_HERO_ID, -1)
+            pendingAiHeroName = intent.getStringExtra(EXTRA_HERO_NAME) ?: ""
+            pendingAiModelPath = intent.getStringExtra(EXTRA_MODEL_PATH) ?: ""
+
+            val mpm = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+            mediaProjectionLauncher.launch(mpm.createScreenCaptureIntent())
+        }
+    }
+
+    private fun startInferenceService(heroId: Long, heroName: String, modelPath: String) {
+        val intent = Intent(this, InferenceService::class.java).apply {
+            action = InferenceService.ACTION_START
+            putExtra(InferenceService.EXTRA_HERO_ID, heroId)
+            putExtra(InferenceService.EXTRA_HERO_NAME, heroName)
+            putExtra(InferenceService.EXTRA_MODEL_PATH, modelPath)
+            putExtra(InferenceService.EXTRA_RESULT_CODE, RecordingService.lastProjectionResultCode)
+            putExtra(InferenceService.EXTRA_DATA, RecordingService.lastProjectionData)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+        GameOverlayService.isAiRunning = true
+        statusText.text = "Holat: AI Ishlamoqda"
+        Toast.makeText(this, "$heroName uchun AI ishga tushirildi!", Toast.LENGTH_SHORT).show()
     }
 
     private fun checkAndStartRecording() {

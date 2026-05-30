@@ -10,6 +10,8 @@ import android.os.IBinder
 import android.provider.Settings
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import com.mlbb.trainer.MainActivity
+import com.mlbb.trainer.RecordingService
 import com.mlbb.trainer.database.AppDatabase
 import com.mlbb.trainer.database.Hero
 import com.mlbb.trainer.inference.InferenceService
@@ -183,11 +185,27 @@ class GameOverlayService : Service() {
             return
         }
 
+        // MediaProjection ruxsati yo'q — MainActivity orqali so'raymiz
+        if (RecordingService.lastProjectionResultCode == -1 || RecordingService.lastProjectionData == null) {
+            val reqIntent = Intent(this, MainActivity::class.java).apply {
+                action = MainActivity.ACTION_REQUEST_PROJECTION
+                putExtra(MainActivity.EXTRA_HERO_ID, currentHeroId)
+                putExtra(MainActivity.EXTRA_HERO_NAME, currentHeroName)
+                putExtra(MainActivity.EXTRA_MODEL_PATH, currentModelPath)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+            startActivity(reqIntent)
+            Toast.makeText(this, "Ekranni yozib olish ruxsatini bering", Toast.LENGTH_LONG).show()
+            return
+        }
+
         val intent = Intent(this, InferenceService::class.java).apply {
             action = InferenceService.ACTION_START
             putExtra(InferenceService.EXTRA_HERO_ID, currentHeroId)
             putExtra(InferenceService.EXTRA_HERO_NAME, currentHeroName)
             putExtra(InferenceService.EXTRA_MODEL_PATH, currentModelPath)
+            putExtra(InferenceService.EXTRA_RESULT_CODE, RecordingService.lastProjectionResultCode)
+            putExtra(InferenceService.EXTRA_DATA, RecordingService.lastProjectionData)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(intent)
