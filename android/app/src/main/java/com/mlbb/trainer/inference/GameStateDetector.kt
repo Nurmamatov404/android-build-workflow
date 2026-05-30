@@ -19,34 +19,56 @@ class GameStateDetector {
         val estimatedGold: Int = 0,
         val isDead: Boolean = false,
         val matchEnded: Boolean = false,
-        val inBattle: Boolean = false
+        val inBattle: Boolean = false,
+        val gameStarted: Boolean = false
     )
+
+    companion object {
+        private const val TAG = "GameStateDetector"
+        private const val DEAD_BRIGHTNESS_THRESHOLD = 12
+        private const val GAME_START_BRIGHTNESS_THRESHOLD = 80
+    }
 
     private var lastLevel = 1
     private var darkFrameCount = 0
+    private var seenBrightFrame = false
 
-    fun detect(bitmap: Bitmap, displayW: Int, displayH: Int, pixelKnowledge: PixelKnowledge? = null): GameState {
+    fun detect(bitmap: Bitmap, displayW: Int, displayH: Int): GameState {
         if (bitmap.width == 0 || bitmap.height == 0) return GameState()
         val w = bitmap.width; val h = bitmap.height
         val pixels = IntArray(w * h)
         bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
 
         val brightnessAvg = averageBrightness(pixels, w, h)
-        val isDead = brightnessAvg < 15 && darkFrameCount > 10
 
-        if (brightnessAvg < 15) darkFrameCount++
-        else darkFrameCount = 0
+        // Qorong'i ekran (o'lim, yuklanish)
+        if (brightnessAvg < DEAD_BRIGHTNESS_THRESHOLD) {
+            darkFrameCount++
+        } else {
+            darkFrameCount = 0
+            if (brightnessAvg > GAME_START_BRIGHTNESS_THRESHOLD) seenBrightFrame = true
+        }
 
-        val level = estimateLevel(pixels, w, h)
-        val hasLevelUp = detectLevelUpButton(pixels, w, h, level)
-        val levelUpPos = findLevelUpButton(pixels, w, h)
+        val isDead = darkFrameCount > 15
+        val gameStarted = seenBrightFrame
 
-        val shopOpen = detectShopOpen(pixels, w, h)
-        val shopRecPos = findRecommendButton(pixels, w, h, displayW, displayH)
+        // Level detection — yuqori-chap burchak
+        val level = detectLevel(pixels, w, h)
+
+        // Level up tugmasi — skill tugmalari ustidagi sariq nuqta
+        val hasLevelUp = detectLevelUp(pixels, w, h)
+        val levelUpPos = findLevelUp(pixels, w, h)
+
+        // Do'kon
+        val shopOpen = detectShop(pixels, w, h)
+        val shopRecPos = findRecommend(pixels, w, h)
         val buyPos = findBuyConfirm(pixels, w, h)
-        val gold = estimateGold(pixels, w, h)
+
+        // Jang
         val inBattle = detectBattle(pixels, w, h)
         val ended = detectMatchEnd(pixels, w, h)
+
+        val gold = estimateGold(pixels, w, h)
 
         if (level > 0) lastLevel = level
 
@@ -63,166 +85,173 @@ class GameStateDetector {
             estimatedGold = gold,
             isDead = isDead,
             matchEnded = ended,
-            inBattle = inBattle
+            inBattle = inBattle,
+            gameStarted = gameStarted
         )
     }
 
     private fun averageBrightness(pixels: IntArray, w: Int, h: Int): Float {
-        val step = 20; var sum = 0f; var count = 0
-        for (y in 0 until h step step)
-            for (x in 0 until w step step) {
-                val p = pixels[y * w + x]; sum += (Color.red(p) + Color.green(p) + Color.blue(p)) / 3f; count++
+        var sum = 0f; var count = 0
+        for (y in 0 until h step 20)
+            for (x in 0 until w step 20) {
+                val p = pixels[y * w + x]
+                sum += (Color.red(p) + Color.green(p) + Color.blue(p)) / 3f
+                count++
             }
-        return sum / count
+        return if (count > 0) sum / count else 0f
     }
 
-    private fun estimateLevel(pixels: IntArray, w: Int, h: Int): Int {
-        // MLBB da hero level yuqori-chap burchakda ko'rinadi
-        val scanY = (h * 0.03f).toInt().coerceIn(0, h - 1)
-        val leftEdge = (w * 0.02f).toInt()
-        val rightEdge = (w * 0.12f).toInt()
+    /**
+     * MLBB da hero level yuqori-chap burchakda, qahramon rasmining yonida
+     * oq raqam bilan ko'rinadi. Raqam oq rangda, kichik to'rtburchak ichida.
+     */
+    private fun detectLevel(pixels: IntArray, w: Int, h: Int): Int {
+        val scanY = (h * 0.025f).toInt().coerceIn(0, h - 1)
+        val leftEdge = (w * 0.01f).toInt()
+        val rightEdge = (w * 0.10f).toInt()
 
-        var brightCount = 0
+        var whiteCount = 0
         for (x in leftEdge until rightEdge) {
             if (scanY >= h || x >= w) continue
             val p = pixels[scanY * w + x]
-            val b = (Color.red(p) + Color.green(p) + Color.blue(p)) / 3f
-            if (b > 180) brightCount++
+            val r = Color.red(p); val g = Color.green(p); val b = Color.blue(p)
+            val brightness = (r + g + b) / 3f
+            if (brightness > 200 && r > 180 && g > 180 && b > 180) whiteCount++
         }
 
-        if (brightCount > 5 && brightCount < 30) {
-            val detected = (brightCount / 2).coerceIn(1, 15)
-            Log.d(TAG, "Level detected: $detected (brightCount=$brightCount)")
-            return detected
+        if (whiteCount in 3..25) {
+            return (whiteCount / 2 + 1).coerceIn(1, 15)
         }
         return lastLevel
     }
 
-    private fun detectLevelUpButton(pixels: IntArray, w: Int, h: Int, currentLevel: Int): Boolean {
+    /**
+     * Level up tugmasi — skill tugmalari ustida sariq/yashil nuqta
+     */
+    private fun detectLevelUp(pixels: IntArray, w: Int, h: Int): Boolean {
         val scanYStart = (h * 0.65f).toInt()
-        val scanYEnd = (h * 0.90f).toInt()
-        val scanXStart = (w * 0.60f).toInt()
-        var brightSpots = 0
+        val scanYEnd = (h * 0.88f).toInt()
+        var yellowCount = 0
 
         for (y in scanYStart until scanYEnd step 4) {
-            for (x in scanXStart until w step 4) {
+            for (x in (w * 0.60f).toInt() until w step 4) {
+                if (y >= h || x >= w) continue
                 val p = pixels[y * w + x]
                 val r = Color.red(p); val g = Color.green(p); val b = Color.blue(p)
-                val brightness = (r + g + b) / 3f
-                val isYellow = r > 180 && g > 160 && b < 100
-                val isWhite = brightness > 200
-                if (isYellow || isWhite) brightSpots++
+                if (r > 180 && g > 150 && b < 100) yellowCount++
             }
         }
-        return brightSpots > 30
+        return yellowCount > 20
     }
 
-    private fun findLevelUpButton(pixels: IntArray, w: Int, h: Int): Pair<Int, Int> {
-        val skillButtons = listOf(
+    /**
+     * Level up tugmasi pozitsiyasi
+     */
+    private fun findLevelUp(pixels: IntArray, w: Int, h: Int): Pair<Int, Int> {
+        val skillPositions = listOf(
             (w * 0.72f).toInt() to (h * 0.82f).toInt(),
             (w * 0.80f).toInt() to (h * 0.78f).toInt(),
             (w * 0.88f).toInt() to (h * 0.74f).toInt(),
             (w * 0.94f).toInt() to (h * 0.68f).toInt(),
         )
-        for ((sx, sy) in skillButtons) {
+        for ((sx, sy) in skillPositions) {
             val checkY = (sy - h * 0.04f).toInt().coerceIn(0, h - 1)
-            if (checkY >= h) continue
             for (dx in -10..10) {
                 val cx = (sx + dx).coerceIn(0, w - 1)
-                if (cx >= w) continue
+                if (checkY >= h) continue
                 val p = pixels[checkY * w + cx]
                 val r = Color.red(p); val g = Color.green(p)
-                if (r > 200 && g > 180) {
-                    return cx to checkY
-                }
+                if (r > 200 && g > 180) return cx to checkY
             }
         }
         return -1 to -1
     }
 
-    private fun detectShopOpen(pixels: IntArray, w: Int, h: Int): Boolean {
-        val centerX = w / 2; val centerY = h / 2
-        var darkCount = 0; val step = 10
-        for (y in (centerY - 50) until (centerY + 50) step step) {
-            for (x in (centerX - 50) until (centerX + 50) step step) {
+    /**
+     * Do'kon ochiqmi? — ekran markazi qorong'i bo'ladi
+     */
+    private fun detectShop(pixels: IntArray, w: Int, h: Int): Boolean {
+        val cx = w / 2; val cy = h / 2
+        var dark = 0
+        for (y in (cy - 50) until (cy + 50) step 10)
+            for (x in (cx - 80) until (cx + 80) step 10) {
                 if (y < 0 || y >= h || x < 0 || x >= w) continue
                 val p = pixels[y * w + x]
-                if ((Color.red(p) + Color.green(p) + Color.blue(p)) / 3f < 30) darkCount++
+                if ((Color.red(p) + Color.green(p) + Color.blue(p)) / 3f < 40) dark++
             }
-        }
-        return darkCount > 50
+        return dark > 60
     }
 
-    private fun findRecommendButton(pixels: IntArray, w: Int, h: Int, dw: Int, dh: Int): Pair<Int, Int> {
-        val scanX = (dw * 0.85f).toInt().coerceIn(0, w - 1)
-        val scanYStart = (dh * 0.35f).toInt().coerceIn(0, h - 1)
-        val scanYEnd = (dh * 0.65f).toInt().coerceIn(0, h - 1)
-
-        var bestBright = 0f; var bestY = -1
-        for (y in scanYStart until scanYEnd step 4) {
+    /**
+     * "Tavsiya etilgan" tugmasi — do'kon o'ng tomoni
+     */
+    private fun findRecommend(pixels: IntArray, w: Int, h: Int): Pair<Int, Int> {
+        val scanX = (w * 0.85f).toInt()
+        var bestY = -1; var bestBright = 0f
+        for (y in (h * 0.35f).toInt() until (h * 0.65f).toInt() step 4) {
             if (y >= h || scanX >= w) continue
             val p = pixels[y * w + scanX]
             val b = (Color.red(p) + Color.green(p) + Color.blue(p)) / 3f
             if (b > bestBright) { bestBright = b; bestY = y }
         }
-        if (bestBright > 150) return (dw * 0.85f).toInt() to (bestY * dh / h)
+        if (bestBright > 150) return scanX to (bestY * h / h)
         return -1 to -1
     }
 
+    /**
+     * "Sotib olish" tugmasi — pastki markaz
+     */
     private fun findBuyConfirm(pixels: IntArray, w: Int, h: Int): Pair<Int, Int> {
-        val bottomY = (h * 0.85f).toInt().coerceIn(0, h - 1)
-        val cx = w / 2
-        for (dx in -50..50 step 2) {
-            val x = (cx + dx).coerceIn(0, w - 1)
-            if (bottomY >= h || x >= w) continue
-            val p = pixels[bottomY * w + x]
+        val y = (h * 0.82f).toInt().coerceIn(0, h - 1)
+        for (dx in -60..60 step 2) {
+            val x = (w / 2 + dx).coerceIn(0, w - 1)
+            if (y >= h || x >= w) continue
+            val p = pixels[y * w + x]
             val r = Color.red(p); val g = Color.green(p)
-            if (r > 200 && g > 100) return cx to bottomY
+            if (r > 200 && g > 100) return x to y
         }
         return -1 to -1
+    }
+
+    /**
+     * Jang — ekranda qizil/ko'k ranglar miqdori
+     */
+    private fun detectBattle(pixels: IntArray, w: Int, h: Int): Boolean {
+        var redBlue = 0
+        for (y in h / 2 until h step 8)
+            for (x in 0 until w step 8) {
+                val p = pixels[y * w + x]
+                val r = Color.red(p); val g = Color.green(p); val b = Color.blue(p)
+                if ((r > 180 && b < 100) || (b > 180 && r < 100)) redBlue++
+            }
+        return redBlue > 40
+    }
+
+    /**
+     * O'yin tugaganmi? — markazda yorug' matn
+     */
+    private fun detectMatchEnd(pixels: IntArray, w: Int, h: Int): Boolean {
+        val cx = w / 2; val cy = h / 2
+        var bright = 0
+        for (dy in -40..40 step 4)
+            for (dx in -100..100 step 4) {
+                val y = (cy + dy).coerceIn(0, h - 1)
+                val x = (cx + dx).coerceIn(0, w - 1)
+                val p = pixels[y * w + x]
+                if ((Color.red(p) + Color.green(p) + Color.blue(p)) / 3f > 220) bright++
+            }
+        return bright > 80
     }
 
     private fun estimateGold(pixels: IntArray, w: Int, h: Int): Int {
-        val topY = (h * 0.03f).toInt().coerceIn(0, h - 1)
-        val centerX = w / 2
-        var goldDigits = 0
-        for (dx in -40..40 step 4) {
-            val x = (centerX + dx).coerceIn(0, w - 1)
-            if (topY >= h || x >= w) continue
-            val p = pixels[topY * w + x]
-            val b = (Color.red(p) + Color.green(p) + Color.blue(p)) / 3f
-            if (b > 180) goldDigits++
+        val y = (h * 0.03f).toInt().coerceIn(0, h - 1)
+        var bright = 0
+        for (dx in -50..50 step 4) {
+            val x = (w / 2 + dx).coerceIn(0, w - 1)
+            if (y >= h || x >= w) continue
+            val p = pixels[y * w + x]
+            if ((Color.red(p) + Color.green(p) + Color.blue(p)) / 3f > 180) bright++
         }
-        return goldDigits * 100
-    }
-
-    private fun detectBattle(pixels: IntArray, w: Int, h: Int): Boolean {
-        val bottomHalf = h / 2
-        var redCount = 0; var blueCount = 0
-        for (y in bottomHalf until h step 6) {
-            for (x in 0 until w step 6) {
-                val p = pixels[y * w + x]
-                val r = Color.red(p); val b = Color.blue(p)
-                if (r > 180 && b < 100) redCount++
-                if (b > 180 && r < 100) blueCount++
-            }
-        }
-        return redCount + blueCount > 50
-    }
-
-    private fun detectMatchEnd(pixels: IntArray, w: Int, h: Int): Boolean {
-        val cy = h / 2; val cx = w / 2
-        var brightCenter = 0
-        for (dy in -30..30 step 4) {
-            for (dx in -80..80 step 4) {
-                val y = (cy + dy).coerceIn(0, h - 1)
-                val x = (cx + dx).coerceIn(0, w - 1)
-                if (y >= h || x >= w) continue
-                val p = pixels[y * w + x]
-                val b = (Color.red(p) + Color.green(p) + Color.blue(p)) / 3f
-                if (b > 200) brightCenter++
-            }
-        }
-        return brightCenter > 100
+        return bright * 100
     }
 }

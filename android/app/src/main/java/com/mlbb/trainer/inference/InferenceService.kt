@@ -1,6 +1,5 @@
 package com.mlbb.trainer.inference
 
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
@@ -22,9 +21,7 @@ import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import com.mlbb.trainer.RecordingService
 import com.mlbb.trainer.overlay.GameOverlayService
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
+import java.io.File
 import kotlin.random.Random
 
 class InferenceService : Service() {
@@ -51,11 +48,13 @@ class InferenceService : Service() {
     private var inferenceThread: HandlerThread? = null
     private var inferenceHandler: Handler? = null
     private var tfliteModel: TFLiteModel? = null
+    private var yoloDetector: YOLODetector? = null
     private var touchExecutor: HumanLikeTouchExecutor? = null
     private var screenAnalyzer: ScreenAnalyzer? = null
     private var gameStateDetector: GameStateDetector? = null
     private var modelPath = ""
     private var heroId = -1L; private var heroName = ""
+    private var useYOLO = false
 
     private lateinit var settings: AISettings
     private val comboProvider = HeroComboProvider()
@@ -72,13 +71,26 @@ class InferenceService : Service() {
     private var apmMode = ApmMode.NORMAL; private var burstTimer = 0
     private var lastHeroAngle = 0f
     private var reanalyzeCounter = 0
+    private val modelSeqLen = 4
+    private val modelFrameInterval = 7
 
     private var lastLevel = 1; private var levelUpSkillPriority = listOf(0, 1, 2)
     private var lastLevelUpAction = 0; private var buyCooldown = 0
     private var deadTimer = 0; private var isAlive = true
+    private var frameCount = 0L
+    private var lastFrameLogTime = 0L
+
+    private var aiState = AIState.LANE_FARM
+    private var stateTimer = 0
+    private val modelFrameBuffer = mutableListOf<Bitmap>()
+    private var modelInferenceCounter = 0
+    private var lastModelOutput: TFLiteModel.InferenceResult? = null
 
     private enum class GamePhase { STARTING, ANALYZING, PLAYING, STOPPED }
     private enum class ApmMode { LAZY, NORMAL, INTENSE }
+    private enum class AIState {
+        LANE_FARM, TEAM_FIGHT, DEAD, SHOPPING, RECALL, ROAMING
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -129,6 +141,18 @@ class InferenceService : Service() {
         if (modelPath.isNotEmpty()) {
             tfliteModel = TFLiteModel(this, modelPath, inputSize = 224, seqLen = 4)
             if (!tfliteModel!!.load()) tfliteModel = null
+
+            val yoloPath = modelPath.replace(".tflite", "_yolo.tflite")
+            if (File(yoloPath).exists()) {
+                yoloDetector = YOLODetector(this, yoloPath)
+                if (yoloDetector!!.load()) {
+                    screenAnalyzer?.setYOLODetector(yoloDetector)
+                    useYOLO = true
+                    Log.i(TAG, "YOLO object detection enabled: $yoloPath")
+                } else {
+                    yoloDetector = null
+                }
+            }
         }
 
         val wm = getSystemService(WINDOW_SERVICE) as WindowManager
@@ -137,15 +161,15 @@ class InferenceService : Service() {
         display.getRealMetrics(metrics)
         displayWidth = metrics.widthPixels; displayHeight = metrics.heightPixels; displayDensity = metrics.densityDpi
 
+        inferenceThread = HandlerThread("InferenceThread").apply { start() }
+        inferenceHandler = Handler(inferenceThread!!.looper)
+
         if (resultCode != -1 && data != null) {
             setupMediaProjection(resultCode, data)
         } else if (RecordingService.lastProjectionResultCode != -1 && RecordingService.lastProjectionData != null) {
             Log.i(TAG, "Using stored MediaProjection from RecordingService")
             setupMediaProjection(RecordingService.lastProjectionResultCode, RecordingService.lastProjectionData!!)
         }
-
-        inferenceThread = HandlerThread("InferenceThread").apply { start() }
-        inferenceHandler = Handler(inferenceThread!!.looper)
 
         gamePhase = GamePhase.ANALYZING
         isRunning = true
@@ -174,32 +198,87 @@ class InferenceService : Service() {
             val image = reader.acquireLatestImage() ?: return@setOnImageAvailableListener
             val bitmap = imageToBitmap(image)
             image.close()
-            if (bitmap != null) onFrame(bitmap)
-        }, null)
+            if (bitmap != null) {
+                inferenceHandler?.post { onFrame(bitmap) }
+            }
+        }, inferenceHandler)
     }
 
     private fun onFrame(bitmap: Bitmap) {
+        frameCount++
+        val now = System.currentTimeMillis()
+        if (now - lastFrameLogTime > 5000) {
+            Log.d(TAG, "FPS: ${frameCount / 5f} pk=${pixelKnowledge != null} phase=$gamePhase")
+            frameCount = 0; lastFrameLogTime = now
+        }
+
         if (gamePhase == GamePhase.ANALYZING) { analyzeScreen(bitmap); return }
 
         reanalyzeCounter++
-        if (reanalyzeCounter >= 200) {
+        if (reanalyzeCounter >= 200 || pixelKnowledge == null) {
             reanalyzeCounter = 0
-            val gk = screenAnalyzer?.analyze(bitmap)
-            if (gk != null && gk.isInitialized) {
-                gameKnowledge = gk
-                val oldPK = gameKnowledge.toPixelCoords(displayWidth, displayHeight)
-                val gs = gameStateDetector?.detect(bitmap, displayWidth, displayHeight) ?: return
-                pixelKnowledge = oldPK.copy(
-                    levelUpX = gs.levelUpButtonX, levelUpY = gs.levelUpButtonY,
-                    shopRecommendX = gs.shopRecommendX, shopRecommendY = gs.shopRecommendY,
-                    buyConfirmX = gs.buyConfirmX, buyConfirmY = gs.buyConfirmY,
-                    heroLevel = gs.heroLevel, hasLevelUp = gs.hasLevelUp,
-                    isShopOpen = gs.isShopOpen, isDead = gs.isDead,
-                    matchEnded = gs.matchEnded, inBattle = gs.inBattle
-                )
-                currentLevel = gs.heroLevel
-                Log.d(TAG, "State: Lv${gs.heroLevel} dead=${gs.isDead} shop=${gs.isShopOpen} battle=${gs.inBattle} ended=${gs.matchEnded}")
+
+            val yoloUsed = useYOLO && yoloDetector != null
+            if (yoloUsed) {
+                val yoloResult = screenAnalyzer?.analyze(bitmap)
+                if (yoloResult != null && yoloResult.isInitialized) {
+                    gameKnowledge = yoloResult
+                    pixelKnowledge = gameKnowledge.toPixelCoords(displayWidth, displayHeight)
+                    Log.d(TAG, "YOLO: Joystick=(${pixelKnowledge?.joystickX},${pixelKnowledge?.joystickY}) Skills=${pixelKnowledge?.skills?.size}")
+                }
+            } else {
+                val gk = screenAnalyzer?.analyze(bitmap)
+                if (gk != null && gk.isInitialized) {
+                    gameKnowledge = gk
+                } else if (pixelKnowledge == null) {
+                    gameKnowledge = GameKnowledge(isInitialized = true)
+                }
             }
+
+            if (pixelKnowledge == null) {
+                pixelKnowledge = gameKnowledge.toPixelCoords(displayWidth, displayHeight)
+            }
+
+            val oldPK = pixelKnowledge ?: gameKnowledge.toPixelCoords(displayWidth, displayHeight)
+            val gs = gameStateDetector?.detect(bitmap, displayWidth, displayHeight) ?: return
+            pixelKnowledge = oldPK.copy(
+                levelUpX = gs.levelUpButtonX, levelUpY = gs.levelUpButtonY,
+                shopRecommendX = gs.shopRecommendX, shopRecommendY = gs.shopRecommendY,
+                buyConfirmX = gs.buyConfirmX, buyConfirmY = gs.buyConfirmY,
+                heroLevel = gs.heroLevel, hasLevelUp = gs.hasLevelUp,
+                isShopOpen = gs.isShopOpen, isDead = gs.isDead,
+                matchEnded = gs.matchEnded, inBattle = gs.inBattle
+            )
+            currentLevel = gs.heroLevel
+            Log.d(TAG, "State: Lv${gs.heroLevel} dead=${gs.isDead} shop=${gs.isShopOpen} battle=${gs.inBattle} ended=${gs.matchEnded}" +
+                    if (yoloUsed) " [YOLO]" else " [heuristic]")
+        }
+
+        runModelOnFrame(bitmap)
+    }
+
+    private fun runModelOnFrame(bitmap: Bitmap) {
+        if (tfliteModel == null) return
+
+        modelInferenceCounter++
+        if (modelInferenceCounter % modelFrameInterval != 0) return
+
+        val small = if (bitmap.width == 224 && bitmap.height == 224)
+            bitmap.copy(Bitmap.Config.ARGB_8888, false)
+        else
+            Bitmap.createScaledBitmap(bitmap, 224, 224, true)
+
+        if (small != null) {
+            modelFrameBuffer.add(small)
+            if (modelFrameBuffer.size > modelSeqLen) modelFrameBuffer.removeAt(0)
+        }
+
+        if (modelFrameBuffer.size < modelSeqLen) return
+
+        lastModelOutput = tfliteModel?.run(modelFrameBuffer.toList())
+        if (lastModelOutput != null) {
+            Log.d(TAG, "Model: ${lastModelOutput!!.actionType} " +
+                    "(${"%.2f".format(lastModelOutput!!.primaryTouchX)},${"%.2f".format(lastModelOutput!!.primaryTouchY)})")
         }
     }
 
@@ -210,7 +289,11 @@ class InferenceService : Service() {
             pixelKnowledge = gameKnowledge.toPixelCoords(displayWidth, displayHeight)
             Log.i(TAG, "Screen analyzed! Joystick:(${pixelKnowledge?.joystickX},${pixelKnowledge?.joystickY}) " +
                     "Skills:${pixelKnowledge?.skills?.size}")
-        } else Log.w(TAG, "Screen analysis failed, using defaults")
+        } else {
+            Log.w(TAG, "Screen analysis failed, using fallback defaults")
+            gameKnowledge = GameKnowledge(isInitialized = true)
+            pixelKnowledge = gameKnowledge.toPixelCoords(displayWidth, displayHeight)
+        }
     }
 
     private fun scheduleNextAction() {
@@ -264,51 +347,138 @@ class InferenceService : Service() {
     }
 
     private fun executeGameAction() {
-        val pk = pixelKnowledge ?: return
+        val pk = pixelKnowledge
+        if (pk == null) { Log.w(TAG, "executeGameAction: pixelKnowledge null, waiting for analysis"); return }
         if (displayWidth == 0 || displayHeight == 0) return
 
         if (pk.matchEnded) { Log.i(TAG, "Match ended, stopping AI")
             stopInference(); return }
 
-        if (pk.isDead) {
-            deadTimer++; if (deadTimer > 5) { isAlive = false; return }
-        } else { deadTimer = 0
-            if (!isAlive) { isAlive = true
-                buyCooldown = 10
-            }
+        comboCooldown = (comboCooldown - 1).coerceAtLeast(0)
+        buyCooldown = (buyCooldown - 1).coerceAtLeast(0)
+
+        val level = pk.heroLevel.coerceAtLeast(1)
+        if (level != lastLevel) {
+            lastLevel = level; currentLevel = level
+            currentCombos = comboProvider.getCombos(heroName, level, settings.apmMode)
         }
 
         if (settings.autoLevelUp && pk.hasLevelUp && pk.levelUpX > 0) {
             doLevelUp(pk); return
         }
 
-        comboCooldown = (comboCooldown - 1).coerceAtLeast(0)
-        buyCooldown = (buyCooldown - 1).coerceAtLeast(0)
+        updateAIState(pk)
+        stateTimer++
 
-        if (settings.autoBuyItems && buyCooldown == 0) {
-            if (pk.isShopOpen && pk.shopRecommendX > 0) { doBuyItem(pk); return }
+        currentPhase = aiState.name
+
+        if (lastModelOutput != null) {
+            val model = lastModelOutput!!
+            when (model.actionType) {
+                "DOWN" -> {
+                    touchExecutor?.executeTouch(model.primaryTouchX, model.primaryTouchY, "DOWN", displayWidth, displayHeight)
+                    Log.d(TAG, "Model: DOWN at ${"%.2f".format(model.primaryTouchX)},${"%.2f".format(model.primaryTouchY)}")
+                }
+                "MOVE" -> {
+                    touchExecutor?.executeTouch(model.primaryTouchX, model.primaryTouchY, "MOVE", displayWidth, displayHeight)
+                    Log.d(TAG, "Model: MOVE to ${"%.2f".format(model.primaryTouchX)},${"%.2f".format(model.primaryTouchY)}")
+                }
+                "UP" -> {
+                    touchExecutor?.executeTouch(0f, 0f, "UP", displayWidth, displayHeight)
+                    Log.d(TAG, "Model: UP")
+                }
+                "NONE" -> executeHeuristicAction(pk)
+            }
+            return
         }
 
-        val level = pk.heroLevel.coerceAtLeast(1)
-        if (level != lastLevel) {
-            lastLevel = level
-            currentLevel = level
-            currentCombos = comboProvider.getCombos(heroName, level, settings.apmMode)
+        executeHeuristicAction(pk)
+    }
+
+    private fun executeHeuristicAction(pk: PixelKnowledge) {
+        when (aiState) {
+            AIState.DEAD -> { return }
+            AIState.SHOPPING -> {
+                if (settings.autoBuyItems && buyCooldown == 0 && pk.shopRecommendX > 0) doBuyItem(pk)
+                return
+            }
+            AIState.RECALL -> { return }
+            AIState.LANE_FARM -> executeLaneFarm(pk)
+            AIState.TEAM_FIGHT -> executeTeamFight(pk)
+            AIState.ROAMING -> executeRoaming(pk)
+        }
+    }
+
+    private fun updateAIState(pk: PixelKnowledge) {
+        val wasDead = aiState == AIState.DEAD
+
+        if (pk.isDead) { aiState = AIState.DEAD; deadTimer++; isAlive = false; return }
+        if (wasDead) { deadTimer = 0; buyCooldown = 10; isAlive = true
+            aiState = AIState.LANE_FARM; stateTimer = 0 }
+
+        if (settings.autoBuyItems && pk.isShopOpen && pk.shopRecommendX > 0) {
+            aiState = AIState.SHOPPING; return
+        }
+        if (aiState == AIState.SHOPPING && !pk.isShopOpen) {
+            aiState = AIState.LANE_FARM; stateTimer = 0
         }
 
-        currentPhase = when {
-            pk.isDead -> "DEAD"; pk.isShopOpen -> "SHOP"
-            pk.inBattle -> "FIGHT"; else -> "PLAY"
+        if (aiState == AIState.RECALL) {
+            if (stateTimer > 30 || pk.isShopOpen) {
+                if (pk.isShopOpen) { aiState = AIState.SHOPPING; return }
+                aiState = AIState.LANE_FARM; stateTimer = 0
+            }
+            return
         }
 
-        if (settings.useHeroCombos && currentCombos.isNotEmpty() && comboCooldown == 0) {
-            if (Random.nextFloat() < 0.35f) { executeCombo(pk); return }
+        if (pk.inBattle) { aiState = AIState.TEAM_FIGHT; stateTimer = 0; return }
+        if (aiState == AIState.TEAM_FIGHT && !pk.inBattle) {
+            aiState = AIState.LANE_FARM; stateTimer = 0
         }
 
+        if (stateTimer > 40 && Random.nextFloat() < 0.15f) {
+            aiState = AIState.ROAMING; stateTimer = 0
+        }
+        if (aiState == AIState.ROAMING && stateTimer > 15) {
+            aiState = AIState.LANE_FARM; stateTimer = 0
+        }
+    }
+
+    private fun executeLaneFarm(pk: PixelKnowledge) {
+        when (Random.nextInt(12)) {
+            0, 1 -> doAttack(pk)
+            2, 3 -> doSkill(pk, 0)
+            4, 5 -> doSkill(pk, 1)
+            6 -> doMoveJoystick(pk)
+            7 -> doMinimapTap(pk)
+            8 -> if (Random.nextFloat() < 0.3f) { aiState = AIState.RECALL; stateTimer = 0; doRecall(pk) }
+            9 -> if (Random.nextFloat() < 0.5f && settings.useHeroCombos && currentCombos.isNotEmpty()) executeCombo(pk)
+            else -> doMoveJoystick(pk)
+        }
+    }
+
+    private fun executeTeamFight(pk: PixelKnowledge) {
+        updateApmMode()
         when (apmMode) {
-            ApmMode.LAZY -> executeLazyAction(pk)
-            ApmMode.NORMAL -> executeNormalAction(pk)
-            ApmMode.INTENSE -> executeIntenseAction(pk)
+            ApmMode.LAZY -> executeNormalAction(pk)
+            ApmMode.NORMAL -> executeIntenseAction(pk)
+            ApmMode.INTENSE -> {
+                executeIntenseAction(pk)
+                if (Random.nextFloat() < 0.4f && settings.useHeroCombos && currentCombos.isNotEmpty()) {
+                    scheduleDelayed(100, 300) { executeCombo(pk) }
+                }
+            }
+        }
+    }
+
+    private fun executeRoaming(pk: PixelKnowledge) {
+        when (Random.nextInt(8)) {
+            0, 1 -> doMoveJoystick(pk)
+            2 -> doMinimapTap(pk)
+            3 -> doAttack(pk)
+            4, 5 -> doSkill(pk, 0)
+            6 -> doSkill(pk, 1)
+            7 -> doMoveJoystick(pk)
         }
     }
 
@@ -543,10 +713,35 @@ class InferenceService : Service() {
     private fun imageToBitmap(image: android.media.Image): Bitmap? {
         val planes = image.planes; if (planes.isEmpty()) return null
         val buffer = planes[0].buffer; val pixelStride = planes[0].pixelStride
-        val rowStride = planes[0].rowStride; val rowPadding = rowStride - pixelStride * image.width
-        val bitmap = Bitmap.createBitmap(image.width + rowPadding / pixelStride, image.height, Bitmap.Config.ARGB_8888)
-        bitmap.copyPixelsFromBuffer(buffer)
-        return if (rowPadding == 0) bitmap else Bitmap.createBitmap(bitmap, 0, 0, image.width, image.height)
+        val rowStride = planes[0].rowStride
+        val rowPadding = rowStride - pixelStride * image.width
+
+        buffer.rewind()
+
+        if (rowPadding == 0) {
+            val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+            bitmap.copyPixelsFromBuffer(buffer)
+            return bitmap
+        }
+
+        val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+        val pixels = IntArray(image.width * image.height)
+        val rowBytes = image.width * pixelStride
+        val line = ByteArray(rowBytes)
+        for (y in 0 until image.height) {
+            buffer.position(y * rowStride)
+            buffer.get(line)
+            for (x in 0 until image.width) {
+                val i = x * 4
+                val a = line[i + 3].toInt() and 0xFF
+                val r = line[i].toInt() and 0xFF
+                val g = line[i + 1].toInt() and 0xFF
+                val b = line[i + 2].toInt() and 0xFF
+                pixels[y * image.width + x] = (a shl 24) or (r shl 16) or (g shl 8) or b
+            }
+        }
+        bitmap.setPixels(pixels, 0, image.width, 0, 0, image.width, image.height)
+        return bitmap
     }
 
     private fun stopInference() {

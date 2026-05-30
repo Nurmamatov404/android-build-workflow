@@ -18,6 +18,11 @@ on:
         required: false
         type: string
         default: 'custom'
+      yolo_epochs:
+        description: "YOLO UI detection o'qitish epochlari"
+        required: false
+        type: number
+        default: 30
 
 jobs:
   train:
@@ -48,7 +53,8 @@ jobs:
           python train/train.py \
             --urls "${{ github.event.inputs.urls }}" \
             --output "output/model_${{ github.event.inputs.hero_name }}.tflite" \
-            --epochs ${{ github.event.inputs.epochs }}
+            --epochs ${{ github.event.inputs.epochs }} \
+            --yolo-epochs ${{ github.event.inputs.yolo_epochs }}
 
       - name: Upload trained model
         uses: actions/upload-artifact@v4

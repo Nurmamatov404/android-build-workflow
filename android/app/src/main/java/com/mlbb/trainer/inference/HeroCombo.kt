@@ -162,9 +162,13 @@ class HeroComboProvider {
 
     fun getCombos(heroName: String, level: Int, apmMode: String): List<SkillCombo> {
         val upper = heroName.uppercase()
-        val heroCombos = allCombos[upper] ?: emptyList()
-        val hardcoded = heroCombos.filter { it.minLevel <= level }
-            .filter { apmMode == "INTENSE" || it.apmRequired != "INTENSE" }
+        val heroCombos = allCombos[upper]
+        val hardcoded = if (heroCombos != null) {
+            heroCombos.filter { it.minLevel <= level }
+                .filter { apmMode == "INTENSE" || it.apmRequired != "INTENSE" }
+        } else {
+            listOf(SkillCombo("basic_farm", farmRotation, minLevel = 1))
+        }
 
         val learnedSkillCombos = learnedCombos
             .filter { it.minLevel <= level }

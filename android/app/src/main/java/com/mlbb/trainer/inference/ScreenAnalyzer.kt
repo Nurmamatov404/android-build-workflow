@@ -2,6 +2,7 @@ package com.mlbb.trainer.inference
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.RectF
 import android.util.Log
 import kotlin.math.abs
 import kotlin.math.sqrt
@@ -19,11 +20,18 @@ class ScreenAnalyzer {
         val skillButtons: List<SkillDetect>,
         val attackX: Int, val attackY: Int, val attackRadius: Int,
         val minimapRegion: MinimapRegion,
-        val displayWidth: Int, val displayHeight: Int
+        val displayWidth: Int, val displayHeight: Int,
+        val yoloUsed: Boolean = false
     )
 
     data class SkillDetect(val label: String, val x: Int, val y: Int, val radius: Int, val confidence: Float)
     data class MinimapRegion(val left: Int, val top: Int, val right: Int, val bottom: Int)
+
+    private var yoloDetector: YOLODetector? = null
+
+    fun setYOLODetector(detector: YOLODetector?) {
+        yoloDetector = detector
+    }
 
     fun analyze(bitmap: Bitmap): GameKnowledge {
         if (bitmap.width == 0 || bitmap.height == 0) return GameKnowledge(isInitialized = false)
@@ -32,6 +40,78 @@ class ScreenAnalyzer {
         val h = bitmap.height
         Log.d(TAG, "Analyzing screen: ${w}x${h}")
 
+        val yoloDetections = yoloDetector?.detect(bitmap) ?: emptyList()
+        val yoloUsed = yoloDetections.isNotEmpty()
+
+        if (yoloUsed) {
+            Log.d(TAG, "YOLO detected ${yoloDetections.size} UI elements")
+            return buildFromYOLO(yoloDetections, w, h)
+        }
+
+        return buildFromHeuristic(bitmap, w, h)
+    }
+
+    private fun buildFromYOLO(detections: List<YOLODetector.Detection>, w: Int, h: Int): GameKnowledge {
+        val detMap = detections.groupBy { it.label }
+
+        fun getRect(label: String): RectF? = detMap[label]?.firstOrNull()?.rect
+        fun getCenter(label: String): Pair<Int, Int>? {
+            val r = getRect(label) ?: return null
+            return (r.centerX().toInt()) to (r.centerY().toInt())
+        }
+
+        val joystick = getCenter("joystick") ?: ((w * 0.12f).toInt() to (h * 0.78f).toInt())
+        val jr = (getRect("joystick")?.let { max(it.width(), it.height()) / 2f }?.toInt()
+            ?: (w * 0.06f).toInt()).coerceAtLeast(40)
+
+        val attack = getCenter("attack") ?: ((w * 0.88f).toInt() to (h * 0.85f).toInt())
+        val ar = (getRect("attack")?.let { max(it.width(), it.height()) / 2f }?.toInt()
+            ?: (w * 0.035f).toInt()).coerceAtLeast(25)
+
+        val minimapRect = getRect("minimap")
+        val ml = minimapRect?.left?.toInt() ?: (w * 0.88f).toInt()
+        val mt = minimapRect?.top?.toInt() ?: 0
+        val mr = minimapRect?.right?.toInt() ?: (w - 1)
+        val mb = minimapRect?.bottom?.toInt() ?: (h * 0.12f).toInt()
+
+        val yoloSkills = listOf("skill1", "skill2", "skill3", "ultimate").mapNotNull { label ->
+            getRect(label)?.let { r ->
+                SkillDetect(
+                    label = label,
+                    x = r.centerX().toInt(),
+                    y = r.centerY().toInt(),
+                    radius = (max(r.width(), r.height()) / 2f).toInt().coerceAtLeast(25),
+                    confidence = detMap[label]?.firstOrNull()?.confidence ?: 0.5f
+                )
+            }
+        }
+
+        val defaultSkills = listOf(
+            SkillDetect("skill1", (w * 0.72f).toInt(), (h * 0.82f).toInt(), (w * 0.035f).toInt(), 0.5f),
+            SkillDetect("skill2", (w * 0.80f).toInt(), (h * 0.78f).toInt(), (w * 0.035f).toInt(), 0.5f),
+            SkillDetect("skill3", (w * 0.88f).toInt(), (h * 0.74f).toInt(), (w * 0.035f).toInt(), 0.5f),
+            SkillDetect("ultimate", (w * 0.94f).toInt(), (h * 0.68f).toInt(), (w * 0.04f).toInt(), 0.5f),
+        )
+
+        val skills = if (yoloSkills.size >= 3) yoloSkills else defaultSkills
+
+        return GameKnowledge(
+            displayWidth = w,
+            displayHeight = h,
+            joystickCenter = UIRegion("joystick", joystick.first.toFloat()/w, joystick.second.toFloat()/h, jr.toFloat()/w),
+            skillButtons = skills.map { UIRegion(it.label, it.x.toFloat()/w, it.y.toFloat()/h, it.radius.toFloat()/w) },
+            attackButton = UIRegion("attack", attack.first.toFloat()/w, attack.second.toFloat()/h, ar.toFloat()/w),
+            recallButton = UIRegion("recall",
+                (detMap["recall"]?.firstOrNull()?.rect?.centerX() ?: (w * 0.05f)) / w,
+                (detMap["recall"]?.firstOrNull()?.rect?.centerY() ?: (h * 0.50f)) / h,
+                0.025f),
+            minimap = UIRegion("minimap", ((ml+mr)/2).toFloat()/w, ((mt+mb)/2).toFloat()/h,
+                0f, (mr-ml).toFloat()/w, (mb-mt).toFloat()/h),
+            isInitialized = true
+        )
+    }
+
+    private fun buildFromHeuristic(bitmap: Bitmap, w: Int, h: Int): GameKnowledge {
         val pixels = IntArray(w * h)
         bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
 
@@ -41,9 +121,9 @@ class ScreenAnalyzer {
         val minimap = detectMinimap(pixels, w, h)
 
         if (joystick != null) {
-            Log.d(TAG, "Joystick at (${joystick.first}, ${joystick.second})")
+            Log.d(TAG, "Heuristic joystick at (${joystick.first}, ${joystick.second})")
         }
-        Log.d(TAG, "Detected ${skillButtons.size} skill buttons")
+        Log.d(TAG, "Heuristic detected ${skillButtons.size} skill buttons")
 
         val defaultSkillPositions = listOf(
             SkillDetect("skill1", (w * 0.72f).toInt(), (h * 0.82f).toInt(), (w * 0.035f).toInt(), 0.5f),

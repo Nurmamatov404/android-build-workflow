@@ -24,7 +24,6 @@ class HumanLikeTouchExecutor(private val context: Context) {
     private val handler = Handler(Looper.getMainLooper())
     private var lastX = -1f
     private var lastY = -1f
-    private var isTouching = false
     private var consecutiveFasts = 0
     private var lastActionTime = 0L
 
@@ -67,40 +66,19 @@ class HumanLikeTouchExecutor(private val context: Context) {
         val absX = (x + ox).toInt().coerceIn(0, displayW - 1)
         val absY = (y + oy).toInt().coerceIn(0, displayH - 1)
 
-        if (Random.nextFloat() < 0.07f) {
-            val mx = (x + getOffset() * 3).toInt().coerceIn(0, displayW - 1)
-            val my = (y + getOffset() * 3).toInt().coerceIn(0, displayH - 1)
-            handler.postDelayed({
-                val service = TouchEventService.instance ?: return@postDelayed
-                quickTap(service, mx, my)
-            }, reactionTime(actionType) / 3)
-            handler.postDelayed({
-                val service = TouchEventService.instance ?: return@postDelayed
-                quickTap(service, absX, absY)
-            }, reactionTime(actionType))
-            Log.d(TAG, "Tap with correction: ($mx,$my) -> ($absX,$absY)")
-            return
-        }
-
         val delay = reactionTime(actionType)
         handler.postDelayed({
-            val service = TouchEventService.instance ?: return@postDelayed
+            val service = TouchEventService.instance
+            if (service == null) { Log.w(TAG, "Tap dropped: TouchEventService null"); return@postDelayed }
+
             val path = Path().apply { moveTo(absX.toFloat(), absY.toFloat()) }
-            val duration = if (Random.nextFloat() < 0.15f) Random.nextLong(80, 250) else Random.nextLong(30, 120)
+            val duration = if (Random.nextFloat() < 0.15f) Random.nextLong(120, 300) else Random.nextLong(60, 180)
             val stroke = GestureDescription.StrokeDescription(path, 0, duration)
             val gesture = GestureDescription.Builder().addStroke(stroke).build()
             service.dispatchGesture(gesture, null, null)
             lastActionTime = System.currentTimeMillis()
-            Log.d(TAG, "Tap $actionType at ($absX, $absY) [${delay}ms]")
+            Log.d(TAG, "Tap $actionType at ($absX, $absY) [${delay}ms dur=${duration}ms]")
         }, delay)
-    }
-
-    private fun quickTap(service: AccessibilityService, x: Int, y: Int) {
-        val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
-        val duration = Random.nextLong(20, 60)
-        val stroke = GestureDescription.StrokeDescription(path, 0, duration)
-        val gesture = GestureDescription.Builder().addStroke(stroke).build()
-        service.dispatchGesture(gesture, null, null)
     }
 
     fun executeSwipe(fromX: Float, fromY: Float, toX: Float, toY: Float,
@@ -114,7 +92,8 @@ class HumanLikeTouchExecutor(private val context: Context) {
 
         val delay = reactionTime(actionType)
         handler.postDelayed({
-            val service = TouchEventService.instance ?: return@postDelayed
+            val service = TouchEventService.instance
+            if (service == null) { Log.w(TAG, "Swipe dropped: TouchEventService null"); return@postDelayed }
             val path = Path().apply {
                 moveTo(ax1.toFloat(), ay1.toFloat())
                 val segments = Random.nextInt(3, 8)
@@ -128,12 +107,12 @@ class HumanLikeTouchExecutor(private val context: Context) {
                 }
                 lineTo(ax2.toFloat(), ay2.toFloat())
             }
-            val duration = Random.nextLong(80, 250)
+            val duration = Random.nextLong(120, 350)
             val stroke = GestureDescription.StrokeDescription(path, 0, duration)
             val gesture = GestureDescription.Builder().addStroke(stroke).build()
             service.dispatchGesture(gesture, null, null)
             lastActionTime = System.currentTimeMillis()
-            Log.d(TAG, "Swipe $actionType ($ax1,$ay1)->($ax2,$ay2) [${delay}ms]")
+            Log.d(TAG, "Swipe $actionType ($ax1,$ay1)->($ax2,$ay2) [${delay}ms dur=${duration}ms]")
         }, delay)
     }
 
@@ -166,62 +145,51 @@ class HumanLikeTouchExecutor(private val context: Context) {
         val dx = (cos(radians) * maxReach * actualIntensity).toFloat()
         val dy = (sin(radians) * maxReach * actualIntensity).toFloat()
 
-        if (!isTouching) {
-            val ox = getOffset(); val oy = getOffset()
-            val ax = (joystickCenterX + ox).toInt().coerceIn(0, displayW - 1)
-            val ay = (joystickCenterY + oy).toInt().coerceIn(0, displayH - 1)
-            val delay = Random.nextLong(30, 120)
-            handler.postDelayed({
-                val service = TouchEventService.instance ?: return@postDelayed
-                val path = Path().apply { moveTo(ax.toFloat(), ay.toFloat()) }
-                val stroke = GestureDescription.StrokeDescription(path, 0, 1)
-                val gesture = GestureDescription.Builder().addStroke(stroke).build()
-                service.dispatchGesture(gesture, null, null)
-                isTouching = true
-                lastX = joystickCenterX + dx
-                lastY = joystickCenterY + dy
-                lastActionTime = System.currentTimeMillis()
-            }, delay)
-        } else {
-            val wobbleX = Random.nextInt(-6, 7)
-            val wobbleY = Random.nextInt(-6, 7)
-            val toX = joystickCenterX + dx + wobbleX
-            val toY = joystickCenterY + dy + wobbleY
-            val delay = Random.nextLong(40, 130)
-            handler.postDelayed({
-                val service = TouchEventService.instance ?: return@postDelayed
-                val path = Path().apply {
-                    val steps = Random.nextInt(2, 5)
-                    for (i in 1..steps) {
-                        val t = i.toFloat() / steps
-                        val wx = Random.nextInt(-5, 6)
-                        val wy = Random.nextInt(-5, 6)
-                        val px = lastX + ((toX - lastX) * t) + wx
-                        val py = lastY + ((toY - lastY) * t) + wy
-                        lineTo(px, py)
-                    }
-                    lineTo(toX, toY)
+        val ox = getOffset(); val oy = getOffset()
+        val startX = (joystickCenterX + ox).toInt().coerceIn(0, displayW - 1)
+        val startY = (joystickCenterY + oy).toInt().coerceIn(0, displayH - 1)
+        val endX = (joystickCenterX + dx + ox).toInt().coerceIn(0, displayW - 1)
+        val endY = (joystickCenterY + dy + oy).toInt().coerceIn(0, displayH - 1)
+
+        val delay = Random.nextLong(30, 120)
+        handler.postDelayed({
+            val service = TouchEventService.instance
+            if (service == null) { Log.w(TAG, "Joystick dropped: service null"); return@postDelayed }
+
+            val path = Path().apply {
+                moveTo(startX.toFloat(), startY.toFloat())
+                val steps = Random.nextInt(2, 4)
+                for (i in 1..steps) {
+                    val t = i.toFloat() / steps
+                    val wx = Random.nextInt(-5, 6)
+                    val wy = Random.nextInt(-5, 6)
+                    val px = startX + ((endX - startX) * t).toInt() + wx
+                    val py = startY + ((endY - startY) * t).toInt() + wy
+                    lineTo(px.toFloat(), py.toFloat())
                 }
-                val duration = Random.nextLong(40, 150)
-                val stroke = GestureDescription.StrokeDescription(path, 0, duration)
-                val gesture = GestureDescription.Builder().addStroke(stroke).build()
-                service.dispatchGesture(gesture, null, null)
-                lastX = toX; lastY = toY
-            }, delay)
-        }
+                lineTo(endX.toFloat(), endY.toFloat())
+            }
+
+            val duration = 400L + Random.nextLong(0, 400)
+            val stroke = GestureDescription.StrokeDescription(path, 0, duration)
+            val gesture = GestureDescription.Builder().addStroke(stroke).build()
+            service.dispatchGesture(gesture, null, null)
+            lastX = endX.toFloat(); lastY = endY.toFloat()
+            lastActionTime = System.currentTimeMillis()
+            Log.d(TAG, "Joystick ${directionDeg.toInt()}° i=${"%.1f".format(intensity)} -> ($endX,$endY) [${duration}ms]")
+        }, delay)
     }
 
     fun executeJoystickRelease() {
-        if (!isTouching) return
-        val delay = Random.nextLong(30, 150)
         handler.postDelayed({
-            val service = TouchEventService.instance ?: return@postDelayed
+            val service = TouchEventService.instance
+            if (service == null) return@postDelayed
             val path = Path().apply { moveTo(lastX, lastY) }
             val stroke = GestureDescription.StrokeDescription(path, 0, 1)
             val gesture = GestureDescription.Builder().addStroke(stroke).build()
             service.dispatchGesture(gesture, null, null)
-            isTouching = false; lastX = -1f; lastY = -1f
-        }, delay)
+            lastX = -1f; lastY = -1f
+        }, Random.nextLong(30, 150))
     }
 
     fun executeTouch(x: Float, y: Float, action: String, displayW: Int, displayH: Int) {
@@ -247,37 +215,28 @@ class HumanLikeTouchExecutor(private val context: Context) {
                 val stroke = GestureDescription.StrokeDescription(path, 0, duration)
                 service.dispatchGesture(
                     GestureDescription.Builder().addStroke(stroke).build(), null, null)
-                lastX = x.toFloat(); lastY = y.toFloat(); isTouching = true
+                lastX = x.toFloat(); lastY = y.toFloat()
             }
             "MOVE" -> {
-                if (!isTouching) {
-                    val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
-                    val stroke = GestureDescription.StrokeDescription(path, 0, 1)
-                    service.dispatchGesture(
-                        GestureDescription.Builder().addStroke(stroke).build(), null, null)
-                } else {
-                    val path = Path().apply { moveTo(lastX, lastY); lineTo(x.toFloat(), y.toFloat()) }
-                    val duration = Random.nextLong(30, 130)
-                    val stroke = GestureDescription.StrokeDescription(path, 0, duration)
-                    service.dispatchGesture(
-                        GestureDescription.Builder().addStroke(stroke).build(), null, null)
-                }
-                lastX = x.toFloat(); lastY = y.toFloat(); isTouching = true
+                val path = Path().apply { moveTo(lastX, lastY); lineTo(x.toFloat(), y.toFloat()) }
+                val duration = Random.nextLong(80, 200)
+                val stroke = GestureDescription.StrokeDescription(path, 0, duration)
+                service.dispatchGesture(
+                    GestureDescription.Builder().addStroke(stroke).build(), null, null)
+                lastX = x.toFloat(); lastY = y.toFloat()
             }
             "UP" -> {
-                if (isTouching) {
-                    val path = Path().apply { moveTo(lastX, lastY) }
-                    val stroke = GestureDescription.StrokeDescription(path, 0, 1)
-                    service.dispatchGesture(
-                        GestureDescription.Builder().addStroke(stroke).build(), null, null)
-                }
-                isTouching = false; lastX = -1f; lastY = -1f
+                val path = Path().apply { moveTo(lastX, lastY) }
+                val stroke = GestureDescription.StrokeDescription(path, 0, 1)
+                service.dispatchGesture(
+                    GestureDescription.Builder().addStroke(stroke).build(), null, null)
+                lastX = -1f; lastY = -1f
             }
             "NONE" -> {}
         }
     }
 
     fun reset() {
-        isTouching = false; lastX = -1f; lastY = -1f; consecutiveFasts = 0
+        lastX = -1f; lastY = -1f; consecutiveFasts = 0
     }
 }
