@@ -1,72 +1,112 @@
-name: Train AI Model from YouTube
+name: Video to Frames Extractor
 
 on:
   workflow_dispatch:
     inputs:
-      urls:
-        description: 'YouTube video URL lari (vergul bilan ajrating)'
+      video_links:
+        description: 'Google Drive video linklari (vergul bilan ajratilgan)'
         required: true
-        type: string
-        default: 'https://youtube.com/...'
-      epochs:
-        description: "O'qitish epochlari soni"
-        required: false
-        type: number
-        default: 20
-      hero_name:
-        description: "Qahramon nomi (fayl nomiga qo'shiladi)"
-        required: false
-        type: string
-        default: 'custom'
-      yolo_epochs:
-        description: "YOLO UI detection o'qitish epochlari"
-        required: false
-        type: number
-        default: 30
+        default: 'h'
+      fps_rate:
+        description: 'Har sekundda nechta kadr ajratib olinsin? (Masalan: 1 yoki 2)'
+        required: true
+        default: '1'
 
 jobs:
-  train:
+  extract:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+    - name: Set up Python
+      uses: actions/allowed/setup-python@v5
+      with:
+        python-version: '3.10'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r train/requirements.txt
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install opencv-python yt-dlp
 
-      - name: Download & verify yt-dlp
-        run: yt-dlp --version
+    - name: Create Workspace Directories
+      run: |
+        mkdir -p downloaded_videos
+        mkdir -p dataset_frames
 
-      - name: Run training
-        run: |
-          mkdir -p output
-          python train/train.py \
-            --urls "${{ github.event.inputs.urls }}" \
-            --output "output/model_${{ github.event.inputs.hero_name }}.tflite" \
-            --epochs ${{ github.event.inputs.epochs }} \
-            --yolo-epochs ${{ github.event.inputs.yolo_epochs }}
+    - name: Run Downloader and Frame Extractor Script
+      env:
+        VIDEO_LINKS: ${{ github.event.inputs.video_links }}
+        FPS_RATE: ${{ github.event.inputs.fps_rate }}
+      run: |
+        python - << 'EOF'
+        import os
+        import cv2
+        import subprocess
 
-      - name: Upload trained model
-        uses: actions/upload-artifact@v4
-        with:
-          name: trained-model-${{ github.event.inputs.hero_name }}
-          path: output/*.tflite
-          if-no-files-found: error
+        links = [link.strip() for link in os.environ.get("VIDEO_LINKS", "").split(",") if link.strip()]
+        fps_rate = float(os.environ.get("FPS_RATE", 1))
+        
+        print(f"[🚀] Jami {len(links)} ta video havola aniqlandi.")
 
-      - name: Upload training logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: training-logs
-          path: output/*.log
-          if-no-files-found: ignore
+        for idx, url in enumerate(links):
+            print(f"\n[🔄] {idx+1}-videoni yuklab olish boshlandi: {url}")
+            video_path = f"downloaded_videos/video_{idx+1}.mp4"
+            
+            # yt-dlp orqali Google Drive-dan videoni yuklab olish
+            try:
+                subprocess.run([
+                    "yt-dlp", 
+                    "-o", video_path, 
+                    "--no-playlist", 
+                    url
+                ], check=True)
+            except Exception as e:
+                print(f"[❌] Videoni yuklab olishda xatolik yuz berdi: {e}")
+                continue
+
+            if not os.path.exists(video_path):
+                print(f"[❌] Video fayli topilmadi (yuklash bajarilmadi): {video_path}")
+                continue
+
+            # OpenCV orqali kadrlarga ajratish
+            print(f"[🎞️] Kadrlarga ajratish boshlandi (FPS: {fps_rate})...")
+            vidcap = cv2.VideoCapture(video_path)
+            video_fps = vidcap.get(cv2.CAP_PROP_FPS)
+            
+            if video_fps == 0:
+                print("[❌] Videoni ochib bo'lmadi yoki FPS aniqlanmadi.")
+                continue
+                
+            hop_frames = int(video_fps / fps_rate) if int(video_fps / fps_rate) > 0 else 1
+            
+            count = 0
+            success = True
+            frame_saved = 0
+
+            while success:
+                success, image = vidcap.read()
+                if not success:
+                    break
+                
+                # Belgilangan FPS tezligi bo'yicha kadrlarni saralab olish
+                if count % hop_frames == 0:
+                    frame_name = f"dataset_frames/v_{idx+1}_frame_{frame_saved:05d}.jpg"
+                    cv2.imwrite(frame_name, image)
+                    frame_saved += 1
+                
+                count += 1
+
+            vidcap.release()
+            print(f"[✓] {idx+1}-videodan {frame_saved} ta rasm ajratib olindi va saqlandi.")
+
+        print("\n[🎉] Barcha jarayonlar muvaffaqiyatli yakunlandi!")
+        EOF
+
+    - name: Upload Dataset Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: mlbb-yolo-dataset-frames
+        path: dataset_frames/
+        retention-days: 7
